@@ -1,0 +1,384 @@
+//! The Report Descriptor format is covered in Section 6 of HID Spec.
+
+use bilge::prelude::*;
+
+use crate::reports::{
+    LampArrayAttributesReport, LampAttributesRequestReport, LampAttributesResponseReport,
+    LampMultiUpdateReport, ReportField, Reports,
+};
+
+#[derive(Default)]
+pub struct ReportDescriptorParser<'a> {
+    // Reference to the next byte to be parsed.
+    bytes: &'a [u8],
+
+    // States.
+    globals: GlobalState,
+    global_stack: Vec<GlobalState>,
+    usages: Vec<u16>,
+    usage_range_min: Option<u16>,
+    collection_depth: usize,
+
+    // LampArray.
+    // Root depth decides whether we're in a collection of a LampArray or not.
+    root_depth: Option<usize>,
+    report_kind: Option<ReportKind>,
+    // Reports.
+    lamp_array_attributes_report: Option<LampArrayAttributesReport>,
+    lamp_attributes_request_report: Option<LampAttributesRequestReport>,
+    lamp_attributes_response_report: Option<LampAttributesResponseReport>,
+    lamp_multi_update_report: Option<LampMultiUpdateReport>,
+}
+
+impl<'a> ReportDescriptorParser<'a> {
+    pub fn new(bytes: &'a [u8]) -> Self {
+        Self {
+            bytes,
+            ..Default::default()
+        }
+    }
+
+    pub fn parse(mut self) -> Option<Reports> {
+        while let Some((tag, data)) = self.next() {
+            match tag.kind() {
+                ItemKind::Global => {
+                    let tag = GlobalItemTag::try_from(tag.tag()).unwrap();
+                    match tag {
+                        GlobalItemTag::UsagePage => self.globals.usage_page = Some(data as u16),
+                        GlobalItemTag::LogicalMin => self.globals.logical_max = Some(data as i32),
+                        GlobalItemTag::LogicalMax => self.globals.logical_max = Some(data as i32),
+                        GlobalItemTag::ReportID => self.globals.report_id = data as u8,
+                        GlobalItemTag::ReportSize => self.globals.report_size = Some(data),
+                        GlobalItemTag::ReportCount => self.globals.report_count = Some(data),
+                        GlobalItemTag::Push => self.global_stack.push(self.globals.clone()),
+                        GlobalItemTag::Pop => self.globals = self.global_stack.pop().unwrap(),
+                        _ => (),
+                    }
+                }
+                ItemKind::Local => {
+                    let tag = LocalItemTag::try_from(tag.tag()).unwrap();
+                    match tag {
+                        LocalItemTag::Usage => {
+                            assert!(data <= u16::MAX as u32);
+                            self.usages.push(data as u16);
+                        }
+                        LocalItemTag::UsageMin => {
+                            assert!(data <= u16::MAX as u32);
+                            self.usage_range_min = Some(data as u16);
+                        }
+                        LocalItemTag::UsageMax => {
+                            let min = self.usage_range_min.take().unwrap();
+                            let max = data as u16;
+                            self.usages.extend(min..=max);
+                        }
+                        _ => (),
+                    }
+                }
+                ItemKind::Main => {
+                    let tag = MainItemTag::try_from(tag.tag()).unwrap();
+                    match tag {
+                        MainItemTag::Collection => self.start_collection(),
+                        MainItemTag::EndCollection => self.end_collection(),
+                        MainItemTag::Input => self.handle_data_item(DataKind::Input, data),
+                        MainItemTag::Output => self.handle_data_item(DataKind::Output, data),
+                        MainItemTag::Feature => self.handle_data_item(DataKind::Feature, data),
+                    }
+                }
+                ItemKind::Reserved => panic!("Reserved"),
+            }
+        }
+
+        Some(Reports {
+            lamp_array_attributes: self.lamp_array_attributes_report?,
+        })
+    }
+
+    fn handle_data_item(&mut self, kind: DataKind, _data: u32) {
+        let report_kind = match self.report_kind {
+            Some(report_kind) => report_kind,
+            None => return,
+        };
+
+        assert_ne!(kind, DataKind::Input);
+
+        let report_size = self.globals.report_size.unwrap();
+        let report_count = self.globals.report_count.unwrap();
+
+        assert_eq!(self.usages.len() as u32, report_count);
+
+        for usage in std::mem::replace(&mut self.usages, Vec::new()) {
+            let field = self.add_field(report_size);
+
+            match report_kind {
+                ReportKind::LampArrayAttributes
+                    if let Some(report) = self.lamp_array_attributes_report.as_mut() =>
+                {
+                    match usage {
+                        USAGE_LAMP_COUNT => report.lamp_count = field,
+                        USAGE_MIN_UPDATE_INTERVAL_US => report.min_update_interval_us = field,
+                        _ => (),
+                    }
+                }
+                ReportKind::LampAttributesRequest => todo!(),
+                ReportKind::LampAttributesResponse => todo!(),
+                ReportKind::LampMultiUpdate => todo!(),
+                ReportKind::LampRangeUpdate => todo!(),
+                ReportKind::LampArrayControlReport => todo!(),
+                _ => (),
+            }
+        }
+    }
+
+    fn start_collection(&mut self) {
+        self.collection_depth += 1;
+        let usage = self.usages.pop().unwrap();
+        let id = self.globals.report_id;
+        match usage {
+            USAGE_LAMP_ARRAY => self.root_depth = Some(self.collection_depth),
+            USAGE_LAMP_ARRAY_ATTRIBUTES_REPORT => {
+                self.report_kind = Some(ReportKind::LampArrayAttributes);
+                self.lamp_array_attributes_report = Some(LampArrayAttributesReport::new(id));
+            }
+            // USAGE_LAMP_ATTRIBUTES_REQUEST_REPORT => {
+            //     self.report_kind = Some(ReportKind::LampAttributesRequest)
+            // }
+            // USAGE_LAMP_ATTRIBUTES_RESPONSE_REPORT => {
+            //     self.report_kind = Some(ReportKind::LampAttributesResponse)
+            // }
+            // USAGE_LAMP_MULTI_UPDATE_REPORT => self.report_kind = Some(ReportKind::LampMultiUpdate),
+            // USAGE_LAMP_RANGE_UPDATE_REPORT => self.report_kind = Some(ReportKind::LampRangeUpdate),
+            // USAGE_LAMP_ARRAY_CONTROL_REPORT => {
+            //     self.report_kind = Some(ReportKind::LampArrayControlReport)
+            // }
+            _ => self.report_kind = None,
+        }
+    }
+
+    fn end_collection(&mut self) {
+        assert!(self.collection_depth > 0);
+
+        if Some(self.collection_depth) == self.root_depth {
+            self.root_depth = None;
+        }
+
+        self.collection_depth -= 1;
+        self.usages.clear();
+    }
+
+    fn next(&mut self) -> Option<(ItemTag, u32)> {
+        if self.bytes.is_empty() {
+            return None;
+        }
+
+        let item_tag = ItemTag::from(self.bytes[0]);
+        let data_len = item_tag.size().get_len();
+
+        if self.bytes.len() < data_len + 1 {
+            return None;
+        }
+
+        if data_len == 0 {
+            self.bytes = &self.bytes[1..];
+            return Some((item_tag, 0));
+        }
+
+        let data = {
+            let slice = &self.bytes[1..(1 + data_len)];
+            self.bytes = &self.bytes[(1 + data_len)..];
+
+            let mut buffer = [0u8; 4];
+            buffer[..data_len].copy_from_slice(slice);
+
+            u32::from_le_bytes(buffer)
+        };
+
+        Some((item_tag, data))
+    }
+
+    fn add_field(&mut self, size: u32) -> ReportField {
+        let info = match self.report_kind.as_mut().unwrap() {
+            ReportKind::LampArrayAttributes => {
+                &mut self.lamp_array_attributes_report.as_mut().unwrap().info
+            }
+            ReportKind::LampAttributesRequest => todo!(),
+            ReportKind::LampAttributesResponse => todo!(),
+            ReportKind::LampMultiUpdate => todo!(),
+            ReportKind::LampRangeUpdate => todo!(),
+            ReportKind::LampArrayControlReport => todo!(),
+        };
+
+        let field = ReportField::new(info.size, size);
+        info.size += size;
+        field
+    }
+}
+
+/// Global state that can be modified by "Global Items".
+/// (see Section 6.2.2.7 HID Spec)
+#[derive(Debug, Clone)]
+pub struct GlobalState {
+    pub usage_page: Option<u16>,
+    pub logical_min: Option<i32>,
+    pub logical_max: Option<i32>,
+
+    // If no Report IDs are used, the default is 0.
+    pub report_id: u8,
+    pub report_size: Option<u32>,
+    pub report_count: Option<u32>,
+}
+
+impl Default for GlobalState {
+    fn default() -> Self {
+        Self {
+            usage_page: None,
+            logical_min: None,
+            logical_max: None,
+            report_id: 0,
+            report_size: None,
+            report_count: None,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum DataKind {
+    Input,
+    Output,
+    Feature,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+enum ReportKind {
+    LampArrayAttributes,
+    LampAttributesRequest,
+    LampAttributesResponse,
+    LampMultiUpdate,
+    LampRangeUpdate,
+    LampArrayControlReport,
+}
+
+// Usages.
+
+const USAGE_PAGE_LIGHTING: u16 = 0x59;
+
+const USAGE_LAMP_ARRAY: u16 = 0x1;
+const USAGE_LAMP_ARRAY_ATTRIBUTES_REPORT: u16 = 0x2;
+const USAGE_LAMP_COUNT: u16 = 0x3;
+const USAGE_LAMP_ARRAY_KIND: u16 = 0x7;
+const USAGE_MIN_UPDATE_INTERVAL_US: u16 = 0x8;
+const USAGE_LAMP_ATTRIBUTES_REQUEST_REPORT: u16 = 0x20;
+const USAGE_LAMP_ID: u16 = 0x21;
+const USAGE_LAMP_ATTRIBUTES_RESPONSE_REPORT: u16 = 0x22;
+const USAGE_UPDATE_LATENCY_US: u16 = 0x27;
+const USAGE_RED_LEVEL_COUNT: u16 = 0x28;
+const USAGE_GREEN_LEVEL_COUNT: u16 = 0x29;
+const USAGE_BLUE_LEVEL_COUNT: u16 = 0x2A;
+const USAGE_INTENSITY_LEVEL_COUNT: u16 = 0x2B;
+const USAGE_IS_PROGRAMMABLE: u16 = 0x2C;
+const USAGE_LAMP_MULTI_UPDATE_REPORT: u16 = 0x50;
+const USAGE_RED_UPDATE_CHANNEL: u16 = 0x51;
+const USAGE_GREEN_UPDATE_CHANNEL: u16 = 0x52;
+const USAGE_BLUE_UPDATE_CHANNEL: u16 = 0x53;
+const USAGE_INTENSITY_UPDATE_CHANNEL: u16 = 0x54;
+const USAGE_LAMP_UPDATE_FLAGS: u16 = 0x55;
+const USAGE_LAMP_RANGE_UPDATE_REPORT: u16 = 0x60;
+const USAGE_LAMP_ID_START: u16 = 0x61;
+const USAGE_LAMP_ID_END: u16 = 0x62;
+const USAGE_LAMP_ARRAY_CONTROL_REPORT: u16 = 0x70;
+const USAGE_AUTONOMOUS_MODE: u16 = 0x71;
+
+// Section 6.2.2.2 of HID Spec.
+//
+// Tags for Short Items.
+// These definitions allow direct parsing from raw bytes.
+#[bitsize(8)]
+#[derive(FromBits, DebugBits)]
+struct ItemTag {
+    pub size: ItemSize,
+    pub kind: ItemKind,
+    pub tag: u4,
+}
+
+#[bitsize(2)]
+#[derive(FromBits, Debug)]
+enum ItemSize {
+    None,
+    One,
+    Two,
+    Four,
+}
+
+impl ItemSize {
+    pub fn get_len(&self) -> usize {
+        match self {
+            ItemSize::None => 0,
+            ItemSize::One => 1,
+            ItemSize::Two => 2,
+            ItemSize::Four => 4,
+        }
+    }
+}
+
+#[bitsize(2)]
+#[derive(FromBits, Debug)]
+enum ItemKind {
+    Main,
+    Global,
+    Local,
+    Reserved,
+}
+
+#[bitsize(4)]
+#[derive(TryFromBits)]
+enum MainItemTag {
+    Input = 0b1000,
+    Output = 0b1001,
+    Feature = 0b1011,
+    Collection = 0b1010,
+    EndCollection = 0b1100,
+}
+
+#[bitsize(8)]
+#[derive(FromBits, DebugBits)]
+struct MainItemAttrs {
+    constant: bool,
+    variable: bool,
+    relative: bool,
+    wrap: bool,
+    non_linear: bool,
+    no_preferred_state: bool,
+    null_state: bool,
+    volatile: bool,
+}
+
+#[bitsize(4)]
+#[derive(TryFromBits)]
+enum GlobalItemTag {
+    UsagePage,
+    LogicalMin,
+    LogicalMax,
+    PhysicalMin,
+    PhysicalMax,
+    UnitExponent,
+    Unit,
+    ReportSize,
+    ReportID,
+    ReportCount,
+    Push,
+    Pop,
+}
+
+#[bitsize(4)]
+#[derive(TryFromBits)]
+enum LocalItemTag {
+    Usage,
+    UsageMin,
+    UsageMax,
+    DesignatorIndex,
+    DesignatorMin,
+    DesignatorMax,
+    StringIndex = 0b111,
+    StringMin,
+    StringMax,
+    Delimiter,
+}

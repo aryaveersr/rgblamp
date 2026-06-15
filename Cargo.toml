@@ -2,3 +2,7 @@
 name = "rgblamp"
 version = "0.1.0"
 edition = "2024"
+
+[dependencies]
+bilge = "0.3.0"
+nix = { version = "0.31.3", features = ["ioctl"] }

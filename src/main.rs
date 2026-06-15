@@ -1,3 +1,17 @@
+use std::fs::{self, OpenOptions};
+
+use rgblamp::reports::Reports;
+
 fn main() {
-    println!("Hello, world!")
+    let data = fs::read("./.ignore/d.bin").unwrap();
+    let x = Reports::from_descriptor(&data).unwrap();
+    let mut file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open("/dev/hidraw1")
+        .unwrap();
+
+    let y = x.lamp_array_attributes.send(&mut file);
+
+    dbg!(y);
 }
