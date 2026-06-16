@@ -181,34 +181,23 @@ impl<'a> ReportDescriptorParser<'a> {
             return None;
         }
 
-        let item_tag = ItemTag::from(self.bytes[0]);
-        let data_len = match item_tag.size() {
+        let tag = ItemTag::from(self.bytes[0]);
+        let len = match tag.size() {
             ItemSize::None => 0,
             ItemSize::One => 1,
             ItemSize::Two => 2,
             ItemSize::Four => 4,
         };
 
-        if self.bytes.len() < data_len + 1 {
-            return None;
-        }
+        assert!(self.bytes.len() >= len + 1);
 
-        if data_len == 0 {
-            self.bytes = &self.bytes[1..];
-            return Some((item_tag, 0));
-        }
+        let slice = &self.bytes[1..(1 + len)];
+        self.bytes = &self.bytes[(1 + len)..];
 
-        let data = {
-            let slice = &self.bytes[1..(1 + data_len)];
-            self.bytes = &self.bytes[(1 + data_len)..];
+        let mut buffer = [0u8; 4];
+        buffer[..len].copy_from_slice(slice);
 
-            let mut buffer = [0u8; 4];
-            buffer[..data_len].copy_from_slice(slice);
-
-            u32::from_le_bytes(buffer)
-        };
-
-        Some((item_tag, data))
+        Some((tag, u32::from_le_bytes(buffer)))
     }
 
     fn get_report(&mut self, kind: ReportKind) -> &mut dyn Report {
