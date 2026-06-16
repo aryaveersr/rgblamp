@@ -6,19 +6,22 @@
 //! The HUT (HID Usage Tables) document has the information for the LampArray interface
 //! under Section 26: Lighting and Illumination Page.
 
-use std::fs::File;
+use std::{fmt::Debug, marker::PhantomData};
 
 use crate::reports::{
-    lamp_array_attributes::LampArrayAttributesReport,
+    lamp_array_attributes::LampArrayAttributesReport, lamp_array_control::LampArrayControlReport,
     lamp_attributes_request::LampAttributesRequestReport,
     lamp_attributes_response::LampAttributesResponseReport,
-    lamp_multi_update::LampMultiUpdateReport, parser::ReportDescriptorParser,
+    lamp_multi_update::LampMultiUpdateReport, lamp_range_update::LampRangeUpdateReport,
+    parser::ReportDescriptorParser,
 };
 
 pub mod lamp_array_attributes;
+pub mod lamp_array_control;
 pub mod lamp_attributes_request;
 pub mod lamp_attributes_response;
 pub mod lamp_multi_update;
+pub mod lamp_range_update;
 
 mod io;
 mod parser;
@@ -28,6 +31,8 @@ pub struct Reports {
     pub lamp_attributes_request: LampAttributesRequestReport,
     pub lamp_attributes_response: LampAttributesResponseReport,
     pub lamp_multi_update: LampMultiUpdateReport,
+    pub lamp_range_update: LampRangeUpdateReport,
+    pub lamp_array_control: LampArrayControlReport,
 }
 
 impl Reports {
@@ -37,30 +42,49 @@ impl Reports {
 }
 
 #[derive(Debug, Default)]
-pub(self) struct ReportField {
+pub(self) struct ReportField<T = u32>
+where
+    T: Into<u32>,
+    T: TryFrom<u32>,
+    <T as TryFrom<u32>>::Error: Debug,
+{
     pub(self) offset: usize,
     pub(self) size: usize,
+    _phantom: PhantomData<T>,
 }
 
-impl ReportField {
+impl<T> ReportField<T>
+where
+    T: Into<u32>,
+    T: TryFrom<u32>,
+    <T as TryFrom<u32>>::Error: Debug,
+{
     pub fn new(offset_bits: u32, size_bits: u32) -> Self {
         assert_eq!(offset_bits % 8, 0);
         assert_eq!(size_bits % 8, 0);
+
         let offset = offset_bits as usize / 8;
         let size = size_bits as usize / 8;
-        Self { offset, size }
+
+        assert!(size <= std::mem::size_of::<T>());
+
+        Self {
+            offset,
+            size,
+            _phantom: PhantomData,
+        }
     }
 
-    pub fn get(&self, bytes: &[u8]) -> u32 {
+    pub fn get(&self, bytes: &[u8]) -> T {
         assert!(bytes.len() >= self.size + self.offset);
         let mut buffer = [0u8; 4];
         buffer[..self.size].copy_from_slice(&bytes[self.offset..(self.offset + self.size)]);
-        u32::from_le_bytes(buffer)
+        u32::from_le_bytes(buffer).try_into().unwrap()
     }
 
-    pub fn set(&self, bytes: &mut [u8], value: u32) {
+    pub fn set(&self, bytes: &mut [u8], value: T) {
         assert!(bytes.len() >= self.size + self.offset);
-        let value = value.to_le_bytes();
+        let value = value.into().to_le_bytes();
         bytes[..self.size].copy_from_slice(&value[..self.size]);
     }
 }

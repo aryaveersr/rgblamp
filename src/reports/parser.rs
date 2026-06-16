@@ -6,6 +6,7 @@ use enum_iterator::{Sequence, all};
 use crate::reports::{
     LampArrayAttributesReport, LampAttributesRequestReport, LampAttributesResponseReport,
     LampMultiUpdateReport, ReportField, ReportInfo, Reports,
+    lamp_array_control::LampArrayControlReport, lamp_range_update::LampRangeUpdateReport,
 };
 
 #[derive(Default)]
@@ -30,6 +31,8 @@ pub struct ReportDescriptorParser<'a> {
     lamp_attributes_request_report: Option<LampAttributesRequestReport>,
     lamp_attributes_response_report: Option<LampAttributesResponseReport>,
     lamp_multi_update_report: Option<LampMultiUpdateReport>,
+    lamp_range_update_report: Option<LampRangeUpdateReport>,
+    lamp_array_control_report: Option<LampArrayControlReport>,
 }
 
 impl<'a> ReportDescriptorParser<'a> {
@@ -99,6 +102,8 @@ impl<'a> ReportDescriptorParser<'a> {
             lamp_attributes_request: self.lamp_attributes_request_report?,
             lamp_attributes_response: self.lamp_attributes_response_report?,
             lamp_multi_update: self.lamp_multi_update_report?,
+            lamp_range_update: self.lamp_range_update_report?,
+            lamp_array_control: self.lamp_array_control_report?,
         })
     }
 

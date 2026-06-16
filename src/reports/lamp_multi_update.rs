@@ -7,7 +7,7 @@ pub struct LampMultiUpdateReport {
     pub(self) info: ReportInfo,
     pub(self) slots: u32,
     pub(self) lamp_count: ReportField,
-    pub(self) lamp_update_flags: ReportField,
+    pub(self) lamp_update_flags: ReportField<u16>,
     pub(self) lamp_id_first: ReportField,
     pub(self) red_update_channel_first: ReportField,
     pub(self) green_update_channel_first: ReportField,
@@ -36,7 +36,7 @@ pub struct LampMultiUpdateParams<'a> {
 
 #[derive(Debug)]
 pub struct LampMultiUpdateItem {
-    pub lamp_id: u8,
+    pub lamp_id: u32,
     pub red_update_channel: u32,
     pub green_update_channel: u32,
     pub blue_update_channel: u32,

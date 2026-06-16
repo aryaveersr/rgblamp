@@ -6,12 +6,12 @@ use crate::reports::{
 };
 
 #[derive(Debug, Default)]
-pub struct LampAttributesRequestReport {
+pub struct LampArrayControlReport {
     pub(super) info: ReportInfo,
-    pub(super) lamp_id: ReportField,
+    pub(super) auto_mode: ReportField<bool>,
 }
 
-impl LampAttributesRequestReport {
+impl LampArrayControlReport {
     pub fn new(id: u8) -> Self {
         Self {
             info: ReportInfo::new(id),
@@ -19,9 +19,9 @@ impl LampAttributesRequestReport {
         }
     }
 
-    pub fn send(&self, file: &mut File, lamp_id: u32) {
+    pub fn send(&self, file: &mut File, auto_mode: bool) {
         let mut bytes = prep_feature(&self.info);
-        self.lamp_id.set(&mut bytes, lamp_id);
+        self.auto_mode.set(&mut bytes, auto_mode);
         set_feature(file, &bytes);
     }
 }

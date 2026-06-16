@@ -11,7 +11,7 @@ pub struct LampAttributesResponseReport {
     pub(self) green_level_count: ReportField,
     pub(self) blue_level_count: ReportField,
     pub(self) intensity_level_count: ReportField,
-    pub(self) is_programmable: ReportField,
+    pub(self) is_programmable: ReportField<bool>,
 }
 
 impl LampAttributesResponseReport {
@@ -26,20 +26,20 @@ impl LampAttributesResponseReport {
         let bytes = &get_feature(file, &self.info)[1..];
 
         LampAttributes {
-            lamp_id: self.lamp_id.get(&bytes) as u8,
+            lamp_id: self.lamp_id.get(&bytes),
             update_latency_us: self.update_latency_us.get(&bytes),
             red_level_count: self.red_level_count.get(&bytes),
             green_level_count: self.green_level_count.get(&bytes),
             blue_level_count: self.blue_level_count.get(&bytes),
             intensity_level_count: self.intensity_level_count.get(&bytes),
-            is_programmable: self.is_programmable.get(&bytes) != 0,
+            is_programmable: self.is_programmable.get(&bytes),
         }
     }
 }
 
 #[derive(Debug)]
 pub struct LampAttributes {
-    pub lamp_id: u8,
+    pub lamp_id: u32,
     pub update_latency_us: u32,
     pub red_level_count: u32,
     pub green_level_count: u32,
