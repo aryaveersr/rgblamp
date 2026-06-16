@@ -1,7 +1,7 @@
 use std::fs::File;
 
 use crate::reports::{
-    ReportField, ReportInfo,
+    Report, ReportField, ReportInfo,
     io::{prep_feature, set_feature},
 };
 
@@ -42,6 +42,16 @@ impl LampRangeUpdateReport {
             .set(&mut bytes, params.intensity_update_channel);
 
         set_feature(file, &bytes);
+    }
+}
+
+impl Report for LampRangeUpdateReport {
+    fn get_info(&self) -> &ReportInfo {
+        &self.info
+    }
+
+    fn get_info_mut(&mut self) -> &mut ReportInfo {
+        &mut self.info
     }
 }
 

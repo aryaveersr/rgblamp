@@ -108,3 +108,8 @@ impl ReportInfo {
         self.size as usize / 8
     }
 }
+
+pub(self) trait Report {
+    fn get_info(&self) -> &ReportInfo;
+    fn get_info_mut(&mut self) -> &mut ReportInfo;
+}

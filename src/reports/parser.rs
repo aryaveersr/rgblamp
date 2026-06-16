@@ -5,7 +5,7 @@ use enum_iterator::{Sequence, all};
 
 use crate::reports::{
     LampArrayAttributesReport, LampAttributesRequestReport, LampAttributesResponseReport,
-    LampMultiUpdateReport, ReportField, ReportInfo, Reports,
+    LampMultiUpdateReport, Report, ReportField, Reports,
     lamp_array_control::LampArrayControlReport, lamp_range_update::LampRangeUpdateReport,
 };
 
@@ -94,7 +94,7 @@ impl<'a> ReportDescriptorParser<'a> {
         }
 
         for kind in all::<ReportKind>() {
-            self.get_report_info(kind).validate();
+            self.get_report(kind).get_info().validate();
         }
 
         Some(Reports {
@@ -211,22 +211,24 @@ impl<'a> ReportDescriptorParser<'a> {
     }
 
     fn add_field(&mut self, size: u32) -> ReportField {
-        let info = self.get_report_info(self.report_kind.unwrap());
+        let info = self.get_report(self.report_kind.unwrap()).get_info_mut();
         let field = ReportField::new(info.size, size);
         info.size += size;
         field
     }
 
-    fn get_report_info(&mut self, kind: ReportKind) -> &mut ReportInfo {
+    fn get_report(&mut self, kind: ReportKind) -> &mut dyn Report {
         match kind {
-            ReportKind::LampArrayAttributes => {
-                &mut self.lamp_array_attributes_report.as_mut().unwrap().info
+            ReportKind::LampArrayAttributes => self.lamp_array_attributes_report.as_mut().unwrap(),
+            ReportKind::LampMultiUpdate => self.lamp_multi_update_report.as_mut().unwrap(),
+            ReportKind::LampRangeUpdate => self.lamp_range_update_report.as_mut().unwrap(),
+            ReportKind::LampArrayControlReport => self.lamp_array_control_report.as_mut().unwrap(),
+            ReportKind::LampAttributesRequest => {
+                self.lamp_attributes_request_report.as_mut().unwrap()
             }
-            ReportKind::LampAttributesRequest => todo!(),
-            ReportKind::LampAttributesResponse => todo!(),
-            ReportKind::LampMultiUpdate => todo!(),
-            ReportKind::LampRangeUpdate => todo!(),
-            ReportKind::LampArrayControlReport => todo!(),
+            ReportKind::LampAttributesResponse => {
+                self.lamp_attributes_response_report.as_mut().unwrap()
+            }
         }
     }
 }

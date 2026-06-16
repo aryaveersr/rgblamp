@@ -1,6 +1,6 @@
 use std::fs::File;
 
-use crate::reports::{ReportField, ReportInfo, io::get_feature};
+use crate::reports::{Report, ReportField, ReportInfo, io::get_feature};
 
 #[derive(Debug, Default)]
 pub struct LampAttributesResponseReport {
@@ -34,6 +34,16 @@ impl LampAttributesResponseReport {
             intensity_level_count: self.intensity_level_count.get(&bytes),
             is_programmable: self.is_programmable.get(&bytes),
         }
+    }
+}
+
+impl Report for LampAttributesResponseReport {
+    fn get_info(&self) -> &ReportInfo {
+        &self.info
+    }
+
+    fn get_info_mut(&mut self) -> &mut ReportInfo {
+        &mut self.info
     }
 }
 

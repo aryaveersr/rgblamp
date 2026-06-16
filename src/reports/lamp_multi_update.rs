@@ -1,6 +1,6 @@
 use std::fs::File;
 
-use crate::reports::{ReportField, ReportInfo};
+use crate::reports::{Report, ReportField, ReportInfo};
 
 #[derive(Debug, Default)]
 pub struct LampMultiUpdateReport {
@@ -25,6 +25,16 @@ impl LampMultiUpdateReport {
 
     pub fn send(&self, file: &mut File, params: LampMultiUpdateParams) {
         todo!()
+    }
+}
+
+impl Report for LampMultiUpdateReport {
+    fn get_info(&self) -> &ReportInfo {
+        &self.info
+    }
+
+    fn get_info_mut(&mut self) -> &mut ReportInfo {
+        &mut self.info
     }
 }
 

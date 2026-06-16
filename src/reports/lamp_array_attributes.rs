@@ -1,6 +1,6 @@
 use std::fs::File;
 
-use crate::reports::{ReportField, ReportInfo, io::get_feature};
+use crate::reports::{Report, ReportField, ReportInfo, io::get_feature};
 
 #[derive(Debug, Default)]
 pub struct LampArrayAttributesReport {
@@ -24,6 +24,16 @@ impl LampArrayAttributesReport {
             lamp_count: self.lamp_count.get(bytes),
             min_update_interval_us: self.min_update_interval_us.get(bytes),
         }
+    }
+}
+
+impl Report for LampArrayAttributesReport {
+    fn get_info(&self) -> &ReportInfo {
+        &self.info
+    }
+
+    fn get_info_mut(&mut self) -> &mut ReportInfo {
+        &mut self.info
     }
 }
 
