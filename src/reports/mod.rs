@@ -25,6 +25,7 @@ pub mod lamp_range_update;
 mod io;
 mod parser;
 
+#[derive(Debug)]
 pub struct Reports {
     pub lamp_array_attrs: LampArrayAttrsReport,
     pub lamp_attrs_request: LampAttrsRequestReport,
@@ -76,6 +77,7 @@ where
 
     pub fn get(&self, bytes: &[u8]) -> T {
         assert!(bytes.len() >= self.size + self.offset);
+
         let mut buffer = [0u8; 4];
         buffer[..self.size].copy_from_slice(&bytes[self.offset..(self.offset + self.size)]);
         u32::from_le_bytes(buffer).try_into().unwrap()
@@ -83,6 +85,7 @@ where
 
     pub fn set(&self, bytes: &mut [u8], value: T) {
         assert!(bytes.len() >= self.size + self.offset);
+
         let value = value.into().to_le_bytes();
         bytes[..self.size].copy_from_slice(&value[..self.size]);
     }
@@ -94,6 +97,7 @@ where
         <V as TryFrom<u32>>::Error: Debug,
     {
         assert!(self.size <= std::mem::size_of::<V>());
+
         ReportField {
             offset: self.offset,
             size: self.size,

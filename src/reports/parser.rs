@@ -111,13 +111,20 @@ impl<'a> ReportDescriptorParser<'a> {
     fn handle_data_item(&mut self, kind: DataKind) {
         if let Some(report_kind) = self.report_kind {
             let size = self.globals.report_size.unwrap();
-            let count = self.globals.report_count.unwrap();
+            let count = self.globals.report_count.unwrap() as usize;
 
             assert_ne!(kind, DataKind::Input);
             assert_ne!(kind, DataKind::Output, "TODO");
-            assert_eq!(self.usages.len() as u32, count);
+            assert!(!self.usages.is_empty());
+            assert!(self.usages.len() <= count);
 
-            let usages = std::mem::take(&mut self.usages);
+            let mut usages = std::mem::take(&mut self.usages);
+
+            if usages.len() < count {
+                let last_usage = *usages.last().unwrap();
+                usages.resize(count, last_usage);
+            }
+
             self.get_report(report_kind).register(&usages, size);
             self.usages = usages;
         }
