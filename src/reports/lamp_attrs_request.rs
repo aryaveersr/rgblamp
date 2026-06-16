@@ -39,8 +39,9 @@ impl LampAttrsRequestReport {
     }
 
     pub fn send(&self, file: &mut File, lamp_id: u32) {
-        let mut bytes = prep_feature(&self.info);
-        self.lamp_id.set(&mut bytes, lamp_id);
-        set_feature(file, &bytes);
+        let mut buffer = prep_feature(&self.info);
+        let bytes = &mut buffer[1..];
+        self.lamp_id.set(bytes, lamp_id);
+        set_feature(file, &mut buffer);
     }
 }

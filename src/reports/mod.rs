@@ -43,7 +43,7 @@ impl Reports {
     }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 struct ReportField<T = u32>
 where
     T: Into<u32>,
@@ -89,7 +89,7 @@ where
         assert!(bytes.len() >= self.size + self.offset);
 
         let value = value.into().to_le_bytes();
-        bytes[..self.size].copy_from_slice(&value[..self.size]);
+        bytes[self.offset..(self.offset + self.size)].copy_from_slice(&value[..self.size]);
     }
 
     pub fn cast_as<V>(self) -> ReportField<V>
@@ -146,7 +146,7 @@ trait Report {
 #[bitsize(16)]
 #[derive(FromBits, DebugBits, DefaultBits)]
 pub struct UpdateFlags {
-    complete: bool,
+    pub complete: bool,
     _reserved: u15,
 }
 

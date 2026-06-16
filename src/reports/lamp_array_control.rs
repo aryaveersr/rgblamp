@@ -39,8 +39,9 @@ impl LampArrayControlReport {
     }
 
     pub fn send(&self, file: &mut File, auto_mode: bool) {
-        let mut bytes = prep_feature(&self.info);
-        self.auto_mode.set(&mut bytes, auto_mode);
-        set_feature(file, &bytes);
+        let mut buffer = prep_feature(&self.info);
+        let bytes = &mut buffer[1..];
+        self.auto_mode.set(bytes, auto_mode);
+        set_feature(file, &mut buffer);
     }
 }

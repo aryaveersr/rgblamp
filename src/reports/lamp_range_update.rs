@@ -26,22 +26,22 @@ impl LampRangeUpdateReport {
     }
 
     pub fn send(&self, file: &mut File, params: LampRangeUpdateParams) {
-        let mut bytes = prep_feature(&self.info);
+        let mut buffer = prep_feature(&self.info);
+        let bytes = &mut buffer[1..];
 
-        self.lamp_id_start.set(&mut bytes, params.lamp_id_start);
-        self.lamp_id_end.set(&mut bytes, params.lamp_id_end);
-        self.lamp_update_flags
-            .set(&mut bytes, params.lamp_update_flags);
+        self.lamp_id_start.set(bytes, params.lamp_id_start);
+        self.lamp_id_end.set(bytes, params.lamp_id_end);
+        self.lamp_update_flags.set(bytes, params.lamp_update_flags);
         self.red_update_channel
-            .set(&mut bytes, params.red_update_channel);
+            .set(bytes, params.red_update_channel);
         self.green_update_channel
-            .set(&mut bytes, params.green_update_channel);
+            .set(bytes, params.green_update_channel);
         self.blue_update_channel
-            .set(&mut bytes, params.blue_update_channel);
+            .set(bytes, params.blue_update_channel);
         self.intensity_update_channel
-            .set(&mut bytes, params.intensity_update_channel);
+            .set(bytes, params.intensity_update_channel);
 
-        set_feature(file, &bytes);
+        set_feature(file, &mut buffer);
     }
 }
 

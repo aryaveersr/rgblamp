@@ -34,11 +34,11 @@ impl LampMultiUpdateReport {
         assert!(params.items.len() <= self.slots as usize);
         assert!(params.items.len() <= u32::MAX as usize);
 
-        let mut bytes = prep_feature(&self.info);
+        let mut buffer = prep_feature(&self.info);
+        let bytes = &mut buffer[1..];
 
-        self.lamp_count.set(&mut bytes, params.items.len() as u32);
-        self.lamp_update_flags
-            .set(&mut bytes, params.lamp_update_flags);
+        self.lamp_count.set(bytes, params.items.len() as u32);
+        self.lamp_update_flags.set(bytes, params.lamp_update_flags);
 
         let mut lamp_id = self.lamp_id_first.clone();
         let mut red_channel = self.red_update_channel_first.clone();
@@ -49,11 +49,11 @@ impl LampMultiUpdateReport {
         let color_size = red_channel.size * 4;
 
         for item in params.items {
-            lamp_id.set(&mut bytes, item.lamp_id);
-            red_channel.set(&mut bytes, item.red_update_channel);
-            green_channel.set(&mut bytes, item.green_update_channel);
-            blue_channel.set(&mut bytes, item.blue_update_channel);
-            intensity_channel.set(&mut bytes, item.intensity_update_channel);
+            lamp_id.set(bytes, item.lamp_id);
+            red_channel.set(bytes, item.red_update_channel);
+            green_channel.set(bytes, item.green_update_channel);
+            blue_channel.set(bytes, item.blue_update_channel);
+            intensity_channel.set(bytes, item.intensity_update_channel);
 
             lamp_id.offset += lamp_id.size;
             red_channel.offset += color_size;
@@ -62,7 +62,7 @@ impl LampMultiUpdateReport {
             intensity_channel.offset += color_size;
         }
 
-        set_feature(file, &bytes);
+        set_feature(file, &mut buffer);
     }
 }
 
@@ -87,16 +87,24 @@ impl Report for LampMultiUpdateReport {
                     }
                     self.slots += 1;
                 }
-                consts::USAGE_RED_UPDATE_CHANNEL if self.slots == 1 => {
+                consts::USAGE_RED_UPDATE_CHANNEL
+                    if self.red_update_channel_first == ReportField::default() =>
+                {
                     self.red_update_channel_first = field
                 }
-                consts::USAGE_GREEN_UPDATE_CHANNEL if self.slots == 1 => {
+                consts::USAGE_GREEN_UPDATE_CHANNEL
+                    if self.green_update_channel_first == ReportField::default() =>
+                {
                     self.green_update_channel_first = field
                 }
-                consts::USAGE_BLUE_UPDATE_CHANNEL if self.slots == 1 => {
+                consts::USAGE_BLUE_UPDATE_CHANNEL
+                    if self.blue_update_channel_first == ReportField::default() =>
+                {
                     self.blue_update_channel_first = field
                 }
-                consts::USAGE_INTENSITY_UPDATE_CHANNEL if self.slots == 1 => {
+                consts::USAGE_INTENSITY_UPDATE_CHANNEL
+                    if self.intensity_update_channel_first == ReportField::default() =>
+                {
                     self.intensity_update_channel_first = field
                 }
                 _ => (),
