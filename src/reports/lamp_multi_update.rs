@@ -37,7 +37,7 @@ impl Report for LampMultiUpdateReport {
         &mut self.info
     }
 
-    fn register(&mut self, usages: Vec<u16>, size: u32) {
+    fn register(&mut self, usages: &[u16], size: u32) {
         todo!()
     }
 }

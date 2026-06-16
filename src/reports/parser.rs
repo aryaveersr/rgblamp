@@ -4,8 +4,8 @@ use bilge::prelude::*;
 
 use crate::reports::{
     LampArrayAttributesReport, LampAttributesRequestReport, LampAttributesResponseReport,
-    LampMultiUpdateReport, Report, ReportField, Reports, consts,
-    lamp_array_control::LampArrayControlReport, lamp_range_update::LampRangeUpdateReport,
+    LampMultiUpdateReport, Report, Reports, consts, lamp_array_control::LampArrayControlReport,
+    lamp_range_update::LampRangeUpdateReport,
 };
 
 #[derive(Default)]
@@ -45,50 +45,10 @@ impl<'a> ReportDescriptorParser<'a> {
     pub fn parse(mut self) -> Reports {
         while let Some((tag, data)) = self.next() {
             match tag.kind() {
-                ItemKind::Global => {
-                    let tag = GlobalItemTag::try_from(tag.tag()).unwrap();
-                    match tag {
-                        GlobalItemTag::UsagePage => self.globals.usage_page = Some(data as u16),
-                        GlobalItemTag::LogicalMin => self.globals.logical_max = Some(data as i32),
-                        GlobalItemTag::LogicalMax => self.globals.logical_max = Some(data as i32),
-                        GlobalItemTag::ReportID => self.globals.report_id = data as u8,
-                        GlobalItemTag::ReportSize => self.globals.report_size = Some(data),
-                        GlobalItemTag::ReportCount => self.globals.report_count = Some(data),
-                        GlobalItemTag::Push => self.global_stack.push(self.globals.clone()),
-                        GlobalItemTag::Pop => self.globals = self.global_stack.pop().unwrap(),
-                        _ => (),
-                    }
-                }
-                ItemKind::Local => {
-                    let tag = LocalItemTag::try_from(tag.tag()).unwrap();
-                    match tag {
-                        LocalItemTag::Usage => {
-                            assert!(data <= u16::MAX as u32);
-                            self.usages.push(data as u16);
-                        }
-                        LocalItemTag::UsageMin => {
-                            assert!(data <= u16::MAX as u32);
-                            self.usage_range_min = Some(data as u16);
-                        }
-                        LocalItemTag::UsageMax => {
-                            let min = self.usage_range_min.take().unwrap();
-                            let max = data as u16;
-                            self.usages.extend(min..=max);
-                        }
-                        _ => (),
-                    }
-                }
-                ItemKind::Main => {
-                    let tag = MainItemTag::try_from(tag.tag()).unwrap();
-                    match tag {
-                        MainItemTag::Collection => self.start_collection(),
-                        MainItemTag::EndCollection => self.end_collection(),
-                        MainItemTag::Input => self.handle_data_item(DataKind::Input, data),
-                        MainItemTag::Output => self.handle_data_item(DataKind::Output, data),
-                        MainItemTag::Feature => self.handle_data_item(DataKind::Feature, data),
-                    }
-                }
-                ItemKind::Reserved => panic!("Reserved"),
+                ItemKind::Global => self.handle_global_item(tag.tag(), data),
+                ItemKind::Local => self.handle_local_item(tag.tag(), data),
+                ItemKind::Main => self.handle_main_item(tag.tag()),
+                ItemKind::Reserved => panic!(),
             }
         }
 
@@ -102,23 +62,67 @@ impl<'a> ReportDescriptorParser<'a> {
         }
     }
 
-    fn handle_data_item(&mut self, kind: DataKind, _data: u32) {
-        let report_kind = match self.report_kind {
-            Some(report_kind) => report_kind,
-            None => return,
-        };
+    fn handle_global_item(&mut self, kind: u4, data: u32) {
+        let kind = GlobalItemKind::try_from(kind).unwrap();
+        match kind {
+            GlobalItemKind::UsagePage => self.globals.usage_page = Some(data as u16),
+            GlobalItemKind::LogicalMin => self.globals.logical_min = Some(data as i32),
+            GlobalItemKind::LogicalMax => self.globals.logical_max = Some(data as i32),
+            GlobalItemKind::ReportID => self.globals.report_id = data as u8,
+            GlobalItemKind::ReportSize => self.globals.report_size = Some(data),
+            GlobalItemKind::ReportCount => self.globals.report_count = Some(data),
+            GlobalItemKind::Push => self.global_stack.push(self.globals.clone()),
+            GlobalItemKind::Pop => self.globals = self.global_stack.pop().unwrap(),
+            _ => (),
+        }
+    }
 
-        assert_ne!(kind, DataKind::Input);
-        assert_ne!(kind, DataKind::Output, "TODO");
+    fn handle_local_item(&mut self, kind: u4, data: u32) {
+        let kind = LocalItemKind::try_from(kind).unwrap();
+        match kind {
+            LocalItemKind::Usage => {
+                assert!(data <= u16::MAX as u32);
+                self.usages.push(data as u16);
+            }
+            LocalItemKind::UsageMin => {
+                assert!(data <= u16::MAX as u32);
+                self.usage_range_min = Some(data as u16);
+            }
+            LocalItemKind::UsageMax => {
+                let min = self.usage_range_min.take().unwrap();
+                let max = data as u16;
+                self.usages.extend(min..=max);
+            }
+            _ => (),
+        }
+    }
 
-        let size = self.globals.report_size.unwrap();
-        let count = self.globals.report_count.unwrap();
+    fn handle_main_item(&mut self, kind: u4) {
+        let kind = MainItemKind::try_from(kind).unwrap();
+        match kind {
+            MainItemKind::Collection => self.start_collection(),
+            MainItemKind::EndCollection => self.end_collection(),
+            MainItemKind::Input => self.handle_data_item(DataKind::Input),
+            MainItemKind::Output => self.handle_data_item(DataKind::Output),
+            MainItemKind::Feature => self.handle_data_item(DataKind::Feature),
+        }
+    }
 
-        assert_eq!(self.usages.len() as u32, count);
+    fn handle_data_item(&mut self, kind: DataKind) {
+        if let Some(report_kind) = self.report_kind {
+            let size = self.globals.report_size.unwrap();
+            let count = self.globals.report_count.unwrap();
 
-        let usages = std::mem::replace(&mut self.usages, Vec::new());
+            assert_ne!(kind, DataKind::Input);
+            assert_ne!(kind, DataKind::Output, "TODO");
+            assert_eq!(self.usages.len() as u32, count);
 
-        self.get_report(report_kind).register(usages, size);
+            let usages = std::mem::take(&mut self.usages);
+            self.get_report(report_kind).register(&usages, size);
+            self.usages = usages;
+        }
+
+        self.usages.clear();
     }
 
     fn start_collection(&mut self) {
@@ -178,7 +182,12 @@ impl<'a> ReportDescriptorParser<'a> {
         }
 
         let item_tag = ItemTag::from(self.bytes[0]);
-        let data_len = item_tag.size().get_len();
+        let data_len = match item_tag.size() {
+            ItemSize::None => 0,
+            ItemSize::One => 1,
+            ItemSize::Two => 2,
+            ItemSize::Four => 4,
+        };
 
         if self.bytes.len() < data_len + 1 {
             return None;
@@ -283,17 +292,6 @@ enum ItemSize {
     Four,
 }
 
-impl ItemSize {
-    pub fn get_len(&self) -> usize {
-        match self {
-            ItemSize::None => 0,
-            ItemSize::One => 1,
-            ItemSize::Two => 2,
-            ItemSize::Four => 4,
-        }
-    }
-}
-
 #[bitsize(2)]
 #[derive(FromBits, Debug)]
 enum ItemKind {
@@ -305,7 +303,7 @@ enum ItemKind {
 
 #[bitsize(4)]
 #[derive(TryFromBits)]
-enum MainItemTag {
+enum MainItemKind {
     Input = 0b1000,
     Output = 0b1001,
     Feature = 0b1011,
@@ -313,22 +311,9 @@ enum MainItemTag {
     EndCollection = 0b1100,
 }
 
-#[bitsize(8)]
-#[derive(FromBits, DebugBits)]
-struct MainItemAttrs {
-    constant: bool,
-    variable: bool,
-    relative: bool,
-    wrap: bool,
-    non_linear: bool,
-    no_preferred_state: bool,
-    null_state: bool,
-    volatile: bool,
-}
-
 #[bitsize(4)]
 #[derive(TryFromBits)]
-enum GlobalItemTag {
+enum GlobalItemKind {
     UsagePage,
     LogicalMin,
     LogicalMax,
@@ -345,7 +330,7 @@ enum GlobalItemTag {
 
 #[bitsize(4)]
 #[derive(TryFromBits)]
-enum LocalItemTag {
+enum LocalItemKind {
     Usage,
     UsageMin,
     UsageMax,

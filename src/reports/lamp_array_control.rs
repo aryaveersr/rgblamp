@@ -20,10 +20,10 @@ impl Report for LampArrayControlReport {
         &mut self.info
     }
 
-    fn register(&mut self, usages: Vec<u16>, size: u32) {
+    fn register(&mut self, usages: &[u16], size: u32) {
         for usage in usages {
             let field = self.create_field(size);
-            if usage == consts::USAGE_AUTONOMOUS_MODE {
+            if *usage == consts::USAGE_AUTONOMOUS_MODE {
                 self.auto_mode = field.cast_as();
             }
         }

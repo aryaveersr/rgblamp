@@ -46,10 +46,10 @@ impl Report for LampAttributesResponseReport {
         &mut self.info
     }
 
-    fn register(&mut self, usages: Vec<u16>, size: u32) {
+    fn register(&mut self, usages: &[u16], size: u32) {
         for usage in usages {
             let field = self.create_field(size);
-            match usage {
+            match *usage {
                 consts::USAGE_LAMP_ID => self.lamp_id = field,
                 consts::USAGE_UPDATE_LATENCY_US => self.update_latency_us = field,
                 consts::USAGE_RED_LEVEL_COUNT => self.red_level_count = field,

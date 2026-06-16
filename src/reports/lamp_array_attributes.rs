@@ -36,10 +36,10 @@ impl Report for LampArrayAttributesReport {
         &mut self.info
     }
 
-    fn register(&mut self, usages: Vec<u16>, size: u32) {
+    fn register(&mut self, usages: &[u16], size: u32) {
         for usage in usages {
             let field = self.create_field(size);
-            match usage {
+            match *usage {
                 consts::USAGE_LAMP_COUNT => self.lamp_count = field,
                 consts::USAGE_MIN_UPDATE_INTERVAL_US => self.min_update_interval_us = field,
                 _ => (),

@@ -54,10 +54,10 @@ impl Report for LampRangeUpdateReport {
         &mut self.info
     }
 
-    fn register(&mut self, usages: Vec<u16>, size: u32) {
+    fn register(&mut self, usages: &[u16], size: u32) {
         for usage in usages {
             let field = self.create_field(size);
-            match usage {
+            match *usage {
                 consts::USAGE_LAMP_ID_START => self.lamp_id_start = field,
                 consts::USAGE_LAMP_ID_END => self.lamp_id_end = field,
                 consts::USAGE_LAMP_UPDATE_FLAGS => self.lamp_update_flags = field.cast_as(),

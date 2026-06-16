@@ -127,7 +127,7 @@ pub(self) trait Report {
     fn get_info(&self) -> &ReportInfo;
     fn get_info_mut(&mut self) -> &mut ReportInfo;
 
-    fn register(&mut self, usages: Vec<u16>, size: u32);
+    fn register(&mut self, usages: &[u16], size: u32);
 
     // Helpers.
     fn create_field(&mut self, size: u32) -> ReportField {
@@ -139,11 +139,10 @@ pub(self) trait Report {
 }
 
 mod consts {
-    pub const USAGE_PAGE_LIGHTING: u16 = 0x59;
-
     pub const USAGE_LAMP_ARRAY: u16 = 0x1;
     pub const USAGE_LAMP_ARRAY_ATTRIBUTES_REPORT: u16 = 0x2;
     pub const USAGE_LAMP_COUNT: u16 = 0x3;
+    #[expect(unused)]
     pub const USAGE_LAMP_ARRAY_KIND: u16 = 0x7;
     pub const USAGE_MIN_UPDATE_INTERVAL_US: u16 = 0x8;
     pub const USAGE_LAMP_ATTRIBUTES_REQUEST_REPORT: u16 = 0x20;
