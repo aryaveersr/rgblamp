@@ -6,167 +6,34 @@
 //! The HUT (HID Usage Tables) document has the information for the LampArray interface
 //! under Section 26: Lighting and Illumination Page.
 
-use std::{fs::File, os::fd::AsRawFd};
+use std::fs::File;
 
-use nix::{ioctl_read, ioctl_readwrite_buf};
+use crate::reports::{
+    lamp_array_attributes::LampArrayAttributesReport,
+    lamp_attributes_request::LampAttributesRequestReport,
+    lamp_attributes_response::LampAttributesResponseReport,
+    lamp_multi_update::LampMultiUpdateReport, parser::ReportDescriptorParser,
+};
 
-use crate::reports::parser::ReportDescriptorParser;
+pub mod lamp_array_attributes;
+pub mod lamp_attributes_request;
+pub mod lamp_attributes_response;
+pub mod lamp_multi_update;
 
+mod io;
 mod parser;
-
-ioctl_readwrite_buf!(hid_get_feature, b'H', 0x07, u8);
 
 pub struct Reports {
     pub lamp_array_attributes: LampArrayAttributesReport,
+    pub lamp_attributes_request: LampAttributesRequestReport,
+    pub lamp_attributes_response: LampAttributesResponseReport,
+    pub lamp_multi_update: LampMultiUpdateReport,
 }
 
 impl Reports {
     pub fn from_descriptor(bytes: &[u8]) -> Option<Self> {
         ReportDescriptorParser::new(bytes).parse()
     }
-}
-
-#[derive(Debug, Default)]
-pub struct LampArrayAttributesReport {
-    pub(self) info: ReportInfo,
-    pub(self) lamp_count: ReportField,
-    pub(self) min_update_interval_us: ReportField,
-}
-
-impl LampArrayAttributesReport {
-    pub fn new(id: u8) -> Self {
-        Self {
-            info: ReportInfo::new(id),
-            ..Default::default()
-        }
-    }
-
-    pub fn send(&self, file: &mut File) -> LampArrayAttributes {
-        assert_eq!(self.info.size % 8, 0);
-        let mut buffer = [0u8; 23];
-        buffer[0] = self.info.id;
-        unsafe {
-            hid_get_feature(file.as_raw_fd(), &mut buffer).unwrap();
-        }
-        let bytes = &buffer[1..];
-        let lamp_count = self.lamp_count.extract(bytes);
-        let min_update_interval_us = self.min_update_interval_us.extract(bytes);
-
-        LampArrayAttributes {
-            lamp_count,
-            min_update_interval_us,
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct LampArrayAttributes {
-    pub lamp_count: u32,
-    pub min_update_interval_us: u32,
-}
-
-// ReportKind::LampAttributesRequest => todo!(),
-// ReportKind::LampAttributesResponse => todo!(),
-// ReportKind::LampMultiUpdate => todo!(),
-// ReportKind::LampRangeUpdate => todo!(),
-// ReportKind::LampArrayControlReport => todo!(),
-
-#[derive(Debug, Default)]
-pub struct LampAttributesRequestReport {
-    pub(self) info: ReportInfo,
-    pub(self) lamp_id: ReportField,
-}
-
-impl LampAttributesRequestReport {
-    pub fn new(id: u8) -> Self {
-        Self {
-            info: ReportInfo::new(id),
-            ..Default::default()
-        }
-    }
-
-    pub fn send(&self, file: &mut File, lamp_id: u8) {
-        dbg!(lamp_id, self);
-        todo!()
-    }
-}
-
-#[derive(Debug, Default)]
-pub struct LampAttributesResponseReport {
-    pub(self) info: ReportInfo,
-    pub(self) lamp_id: ReportField,
-    pub(self) update_latency_us: ReportField,
-    pub(self) red_level_count: ReportField,
-    pub(self) green_level_count: ReportField,
-    pub(self) blue_level_count: ReportField,
-    pub(self) intensity_level_count: ReportField,
-    pub(self) is_programmable: ReportField,
-}
-
-impl LampAttributesResponseReport {
-    pub fn new(id: u8) -> Self {
-        Self {
-            info: ReportInfo::new(id),
-            ..Default::default()
-        }
-    }
-
-    pub fn send(&self, file: &mut File) -> LampAttributes {
-        dbg!(self);
-        todo!()
-    }
-}
-
-pub struct LampAttributes {
-    pub lamp_id: u8,
-    pub update_latency_us: u32,
-    pub red_level_count: u32,
-    pub green_level_count: u32,
-    pub blue_level_count: u32,
-    pub intensity_level_count: u32,
-    pub is_programmable: bool,
-}
-
-#[derive(Debug, Default)]
-pub struct LampMultiUpdateReport {
-    pub(self) info: ReportInfo,
-    pub(self) slots: u32,
-    pub(self) lamp_count: ReportField,
-    pub(self) lamp_update_flags: ReportField,
-    pub(self) lamp_id_first: ReportField,
-    pub(self) red_update_channel_first: ReportField,
-    pub(self) green_update_channel_first: ReportField,
-    pub(self) blue_update_channel_first: ReportField,
-    pub(self) intensity_update_channel_first: ReportField,
-}
-
-impl LampMultiUpdateReport {
-    pub fn new(id: u8) -> Self {
-        Self {
-            info: ReportInfo::new(id),
-            ..Default::default()
-        }
-    }
-
-    pub fn send(&self, file: &mut File, params: LampMultiUpdateParams) {
-        dbg!(self, params);
-        todo!()
-    }
-}
-
-#[derive(Debug)]
-pub struct LampMultiUpdateParams<'a> {
-    pub lamp_update_flags: u16,
-    pub items: &'a [LampMultiUpdateItem],
-}
-
-#[derive(Debug)]
-pub struct LampMultiUpdateItem {
-    pub lamp_id: u8,
-    pub red_update_channel: u32,
-    pub green_update_channel: u32,
-    pub blue_update_channel: u32,
-    pub intensity_update_channel: u32,
 }
 
 #[derive(Debug, Default)]
@@ -184,22 +51,36 @@ impl ReportField {
         Self { offset, size }
     }
 
-    pub fn extract(&self, bytes: &[u8]) -> u32 {
+    pub fn get(&self, bytes: &[u8]) -> u32 {
         assert!(bytes.len() >= self.size + self.offset);
         let mut buffer = [0u8; 4];
         buffer[..self.size].copy_from_slice(&bytes[self.offset..(self.offset + self.size)]);
         u32::from_le_bytes(buffer)
     }
+
+    pub fn set(&self, bytes: &mut [u8], value: u32) {
+        assert!(bytes.len() >= self.size + self.offset);
+        let value = value.to_le_bytes();
+        bytes[..self.size].copy_from_slice(&value[..self.size]);
+    }
 }
 
 #[derive(Debug, Default)]
 pub(self) struct ReportInfo {
-    pub(self) id: u8,
-    pub(self) size: u32,
+    pub id: u8,
+    pub size: u32,
 }
 
 impl ReportInfo {
-    pub(self) fn new(id: u8) -> Self {
+    pub fn new(id: u8) -> Self {
         Self { id, size: 0 }
+    }
+
+    pub fn validate(&self) {
+        assert_eq!(self.size % 8, 0)
+    }
+
+    pub fn bytes_len(&self) -> usize {
+        self.size as usize / 8
     }
 }

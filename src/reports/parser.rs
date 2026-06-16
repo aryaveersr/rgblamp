@@ -1,10 +1,11 @@
 //! The Report Descriptor format is covered in Section 6 of HID Spec.
 
 use bilge::prelude::*;
+use enum_iterator::{Sequence, all};
 
 use crate::reports::{
     LampArrayAttributesReport, LampAttributesRequestReport, LampAttributesResponseReport,
-    LampMultiUpdateReport, ReportField, Reports,
+    LampMultiUpdateReport, ReportField, ReportInfo, Reports,
 };
 
 #[derive(Default)]
@@ -20,6 +21,7 @@ pub struct ReportDescriptorParser<'a> {
     collection_depth: usize,
 
     // LampArray.
+    //
     // Root depth decides whether we're in a collection of a LampArray or not.
     root_depth: Option<usize>,
     report_kind: Option<ReportKind>,
@@ -88,8 +90,15 @@ impl<'a> ReportDescriptorParser<'a> {
             }
         }
 
+        for kind in all::<ReportKind>() {
+            self.get_report_info(kind).validate();
+        }
+
         Some(Reports {
             lamp_array_attributes: self.lamp_array_attributes_report?,
+            lamp_attributes_request: self.lamp_attributes_request_report?,
+            lamp_attributes_response: self.lamp_attributes_response_report?,
+            lamp_multi_update: self.lamp_multi_update_report?,
         })
     }
 
@@ -100,6 +109,7 @@ impl<'a> ReportDescriptorParser<'a> {
         };
 
         assert_ne!(kind, DataKind::Input);
+        assert_ne!(kind, DataKind::Output, "TODO");
 
         let report_size = self.globals.report_size.unwrap();
         let report_count = self.globals.report_count.unwrap();
@@ -196,7 +206,14 @@ impl<'a> ReportDescriptorParser<'a> {
     }
 
     fn add_field(&mut self, size: u32) -> ReportField {
-        let info = match self.report_kind.as_mut().unwrap() {
+        let info = self.get_report_info(self.report_kind.unwrap());
+        let field = ReportField::new(info.size, size);
+        info.size += size;
+        field
+    }
+
+    fn get_report_info(&mut self, kind: ReportKind) -> &mut ReportInfo {
+        match kind {
             ReportKind::LampArrayAttributes => {
                 &mut self.lamp_array_attributes_report.as_mut().unwrap().info
             }
@@ -205,11 +222,7 @@ impl<'a> ReportDescriptorParser<'a> {
             ReportKind::LampMultiUpdate => todo!(),
             ReportKind::LampRangeUpdate => todo!(),
             ReportKind::LampArrayControlReport => todo!(),
-        };
-
-        let field = ReportField::new(info.size, size);
-        info.size += size;
-        field
+        }
     }
 }
 
@@ -247,7 +260,7 @@ enum DataKind {
     Feature,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Sequence)]
 enum ReportKind {
     LampArrayAttributes,
     LampAttributesRequest,
