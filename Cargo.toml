@@ -5,5 +5,4 @@ edition = "2024"
 
 [dependencies]
 bilge = "0.3.0"
-enum-iterator = "2.3.0"
 nix = { version = "0.31.3", features = ["ioctl"] }

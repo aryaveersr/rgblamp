@@ -42,3 +42,14 @@ pub struct LampArrayAttributes {
     pub lamp_count: u32,
     pub min_update_interval_us: u32,
 }
+
+//
+// ReportKind::LampArrayAttributes
+//     if let Some(report) = self.lamp_array_attributes_report.as_mut() =>
+// {
+//     match usage {
+//         USAGE_LAMP_COUNT => report.lamp_count = field,
+//         USAGE_MIN_UPDATE_INTERVAL_US => report.min_update_interval_us = field,
+//         _ => (),
+//     }
+// }

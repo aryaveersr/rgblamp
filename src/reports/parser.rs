@@ -1,11 +1,10 @@
 //! The Report Descriptor format is covered in Section 6 of HID Spec.
 
 use bilge::prelude::*;
-use enum_iterator::{Sequence, all};
 
 use crate::reports::{
     LampArrayAttributesReport, LampAttributesRequestReport, LampAttributesResponseReport,
-    LampMultiUpdateReport, Report, ReportField, Reports,
+    LampMultiUpdateReport, Report, ReportField, Reports, consts,
     lamp_array_control::LampArrayControlReport, lamp_range_update::LampRangeUpdateReport,
 };
 
@@ -43,7 +42,7 @@ impl<'a> ReportDescriptorParser<'a> {
         }
     }
 
-    pub fn parse(mut self) -> Option<Reports> {
+    pub fn parse(mut self) -> Reports {
         while let Some((tag, data)) = self.next() {
             match tag.kind() {
                 ItemKind::Global => {
@@ -93,18 +92,14 @@ impl<'a> ReportDescriptorParser<'a> {
             }
         }
 
-        for kind in all::<ReportKind>() {
-            self.get_report(kind).get_info().validate();
+        Reports {
+            lamp_array_attributes: self.lamp_array_attributes_report.unwrap(),
+            lamp_attributes_request: self.lamp_attributes_request_report.unwrap(),
+            lamp_attributes_response: self.lamp_attributes_response_report.unwrap(),
+            lamp_multi_update: self.lamp_multi_update_report.unwrap(),
+            lamp_range_update: self.lamp_range_update_report.unwrap(),
+            lamp_array_control: self.lamp_array_control_report.unwrap(),
         }
-
-        Some(Reports {
-            lamp_array_attributes: self.lamp_array_attributes_report?,
-            lamp_attributes_request: self.lamp_attributes_request_report?,
-            lamp_attributes_response: self.lamp_attributes_response_report?,
-            lamp_multi_update: self.lamp_multi_update_report?,
-            lamp_range_update: self.lamp_range_update_report?,
-            lamp_array_control: self.lamp_array_control_report?,
-        })
     }
 
     fn handle_data_item(&mut self, kind: DataKind, _data: u32) {
@@ -116,61 +111,58 @@ impl<'a> ReportDescriptorParser<'a> {
         assert_ne!(kind, DataKind::Input);
         assert_ne!(kind, DataKind::Output, "TODO");
 
-        let report_size = self.globals.report_size.unwrap();
-        let report_count = self.globals.report_count.unwrap();
+        let size = self.globals.report_size.unwrap();
+        let count = self.globals.report_count.unwrap();
 
-        assert_eq!(self.usages.len() as u32, report_count);
+        assert_eq!(self.usages.len() as u32, count);
 
-        for usage in std::mem::replace(&mut self.usages, Vec::new()) {
-            let field = self.add_field(report_size);
+        let usages = std::mem::replace(&mut self.usages, Vec::new());
 
-            match report_kind {
-                ReportKind::LampArrayAttributes
-                    if let Some(report) = self.lamp_array_attributes_report.as_mut() =>
-                {
-                    match usage {
-                        USAGE_LAMP_COUNT => report.lamp_count = field,
-                        USAGE_MIN_UPDATE_INTERVAL_US => report.min_update_interval_us = field,
-                        _ => (),
-                    }
-                }
-                ReportKind::LampAttributesRequest => todo!(),
-                ReportKind::LampAttributesResponse => todo!(),
-                ReportKind::LampMultiUpdate => todo!(),
-                ReportKind::LampRangeUpdate => todo!(),
-                ReportKind::LampArrayControlReport => todo!(),
-                _ => (),
-            }
-        }
+        self.get_report(report_kind).register(usages, size);
     }
 
     fn start_collection(&mut self) {
         self.collection_depth += 1;
-        let usage = self.usages.pop().unwrap();
+
         let id = self.globals.report_id;
+        let usage = self.usages.pop().unwrap();
+
         match usage {
-            USAGE_LAMP_ARRAY => self.root_depth = Some(self.collection_depth),
-            USAGE_LAMP_ARRAY_ATTRIBUTES_REPORT => {
-                self.report_kind = Some(ReportKind::LampArrayAttributes);
+            consts::USAGE_LAMP_ARRAY => self.root_depth = Some(self.collection_depth),
+            consts::USAGE_LAMP_ARRAY_ATTRIBUTES_REPORT => {
                 self.lamp_array_attributes_report = Some(LampArrayAttributesReport::new(id));
+                self.report_kind = Some(ReportKind::LampArrayAttributes);
             }
-            // USAGE_LAMP_ATTRIBUTES_REQUEST_REPORT => {
-            //     self.report_kind = Some(ReportKind::LampAttributesRequest)
-            // }
-            // USAGE_LAMP_ATTRIBUTES_RESPONSE_REPORT => {
-            //     self.report_kind = Some(ReportKind::LampAttributesResponse)
-            // }
-            // USAGE_LAMP_MULTI_UPDATE_REPORT => self.report_kind = Some(ReportKind::LampMultiUpdate),
-            // USAGE_LAMP_RANGE_UPDATE_REPORT => self.report_kind = Some(ReportKind::LampRangeUpdate),
-            // USAGE_LAMP_ARRAY_CONTROL_REPORT => {
-            //     self.report_kind = Some(ReportKind::LampArrayControlReport)
-            // }
+            consts::USAGE_LAMP_ATTRIBUTES_REQUEST_REPORT => {
+                self.lamp_attributes_request_report = Some(LampAttributesRequestReport::new(id));
+                self.report_kind = Some(ReportKind::LampAttributesRequest);
+            }
+            consts::USAGE_LAMP_ATTRIBUTES_RESPONSE_REPORT => {
+                self.lamp_attributes_response_report = Some(LampAttributesResponseReport::new(id));
+                self.report_kind = Some(ReportKind::LampAttributesResponse);
+            }
+            consts::USAGE_LAMP_MULTI_UPDATE_REPORT => {
+                self.lamp_multi_update_report = Some(LampMultiUpdateReport::new(id));
+                self.report_kind = Some(ReportKind::LampMultiUpdate);
+            }
+            consts::USAGE_LAMP_RANGE_UPDATE_REPORT => {
+                self.lamp_range_update_report = Some(LampRangeUpdateReport::new(id));
+                self.report_kind = Some(ReportKind::LampRangeUpdate);
+            }
+            consts::USAGE_LAMP_ARRAY_CONTROL_REPORT => {
+                self.lamp_array_control_report = Some(LampArrayControlReport::new(id));
+                self.report_kind = Some(ReportKind::LampArrayControlReport)
+            }
             _ => self.report_kind = None,
         }
     }
 
     fn end_collection(&mut self) {
         assert!(self.collection_depth > 0);
+
+        if let Some(kind) = self.report_kind {
+            self.get_report(kind).get_info().validate();
+        }
 
         if Some(self.collection_depth) == self.root_depth {
             self.root_depth = None;
@@ -208,13 +200,6 @@ impl<'a> ReportDescriptorParser<'a> {
         };
 
         Some((item_tag, data))
-    }
-
-    fn add_field(&mut self, size: u32) -> ReportField {
-        let info = self.get_report(self.report_kind.unwrap()).get_info_mut();
-        let field = ReportField::new(info.size, size);
-        info.size += size;
-        field
     }
 
     fn get_report(&mut self, kind: ReportKind) -> &mut dyn Report {
@@ -267,7 +252,7 @@ enum DataKind {
     Feature,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Sequence)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 enum ReportKind {
     LampArrayAttributes,
     LampAttributesRequest,
@@ -276,36 +261,6 @@ enum ReportKind {
     LampRangeUpdate,
     LampArrayControlReport,
 }
-
-// Usages.
-
-const USAGE_PAGE_LIGHTING: u16 = 0x59;
-
-const USAGE_LAMP_ARRAY: u16 = 0x1;
-const USAGE_LAMP_ARRAY_ATTRIBUTES_REPORT: u16 = 0x2;
-const USAGE_LAMP_COUNT: u16 = 0x3;
-const USAGE_LAMP_ARRAY_KIND: u16 = 0x7;
-const USAGE_MIN_UPDATE_INTERVAL_US: u16 = 0x8;
-const USAGE_LAMP_ATTRIBUTES_REQUEST_REPORT: u16 = 0x20;
-const USAGE_LAMP_ID: u16 = 0x21;
-const USAGE_LAMP_ATTRIBUTES_RESPONSE_REPORT: u16 = 0x22;
-const USAGE_UPDATE_LATENCY_US: u16 = 0x27;
-const USAGE_RED_LEVEL_COUNT: u16 = 0x28;
-const USAGE_GREEN_LEVEL_COUNT: u16 = 0x29;
-const USAGE_BLUE_LEVEL_COUNT: u16 = 0x2A;
-const USAGE_INTENSITY_LEVEL_COUNT: u16 = 0x2B;
-const USAGE_IS_PROGRAMMABLE: u16 = 0x2C;
-const USAGE_LAMP_MULTI_UPDATE_REPORT: u16 = 0x50;
-const USAGE_RED_UPDATE_CHANNEL: u16 = 0x51;
-const USAGE_GREEN_UPDATE_CHANNEL: u16 = 0x52;
-const USAGE_BLUE_UPDATE_CHANNEL: u16 = 0x53;
-const USAGE_INTENSITY_UPDATE_CHANNEL: u16 = 0x54;
-const USAGE_LAMP_UPDATE_FLAGS: u16 = 0x55;
-const USAGE_LAMP_RANGE_UPDATE_REPORT: u16 = 0x60;
-const USAGE_LAMP_ID_START: u16 = 0x61;
-const USAGE_LAMP_ID_END: u16 = 0x62;
-const USAGE_LAMP_ARRAY_CONTROL_REPORT: u16 = 0x70;
-const USAGE_AUTONOMOUS_MODE: u16 = 0x71;
 
 // Section 6.2.2.2 of HID Spec.
 //

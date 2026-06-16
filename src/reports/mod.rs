@@ -112,4 +112,44 @@ impl ReportInfo {
 pub(self) trait Report {
     fn get_info(&self) -> &ReportInfo;
     fn get_info_mut(&mut self) -> &mut ReportInfo;
+
+    fn register(&mut self, usages: Vec<u16>, size: u32);
+
+    // Helpers.
+    fn add_field(&mut self, size: u32) -> ReportField {
+        let info = self.get_info_mut();
+        let field = ReportField::new(info.size, size);
+        info.size += size;
+        field
+    }
+}
+
+mod consts {
+    pub const USAGE_PAGE_LIGHTING: u16 = 0x59;
+
+    pub const USAGE_LAMP_ARRAY: u16 = 0x1;
+    pub const USAGE_LAMP_ARRAY_ATTRIBUTES_REPORT: u16 = 0x2;
+    pub const USAGE_LAMP_COUNT: u16 = 0x3;
+    pub const USAGE_LAMP_ARRAY_KIND: u16 = 0x7;
+    pub const USAGE_MIN_UPDATE_INTERVAL_US: u16 = 0x8;
+    pub const USAGE_LAMP_ATTRIBUTES_REQUEST_REPORT: u16 = 0x20;
+    pub const USAGE_LAMP_ID: u16 = 0x21;
+    pub const USAGE_LAMP_ATTRIBUTES_RESPONSE_REPORT: u16 = 0x22;
+    pub const USAGE_UPDATE_LATENCY_US: u16 = 0x27;
+    pub const USAGE_RED_LEVEL_COUNT: u16 = 0x28;
+    pub const USAGE_GREEN_LEVEL_COUNT: u16 = 0x29;
+    pub const USAGE_BLUE_LEVEL_COUNT: u16 = 0x2A;
+    pub const USAGE_INTENSITY_LEVEL_COUNT: u16 = 0x2B;
+    pub const USAGE_IS_PROGRAMMABLE: u16 = 0x2C;
+    pub const USAGE_LAMP_MULTI_UPDATE_REPORT: u16 = 0x50;
+    pub const USAGE_RED_UPDATE_CHANNEL: u16 = 0x51;
+    pub const USAGE_GREEN_UPDATE_CHANNEL: u16 = 0x52;
+    pub const USAGE_BLUE_UPDATE_CHANNEL: u16 = 0x53;
+    pub const USAGE_INTENSITY_UPDATE_CHANNEL: u16 = 0x54;
+    pub const USAGE_LAMP_UPDATE_FLAGS: u16 = 0x55;
+    pub const USAGE_LAMP_RANGE_UPDATE_REPORT: u16 = 0x60;
+    pub const USAGE_LAMP_ID_START: u16 = 0x61;
+    pub const USAGE_LAMP_ID_END: u16 = 0x62;
+    pub const USAGE_LAMP_ARRAY_CONTROL_REPORT: u16 = 0x70;
+    pub const USAGE_AUTONOMOUS_MODE: u16 = 0x71;
 }
