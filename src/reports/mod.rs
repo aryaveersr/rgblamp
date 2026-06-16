@@ -42,7 +42,7 @@ impl Reports {
 }
 
 #[derive(Debug, Default)]
-pub(self) struct ReportField<T = u32>
+struct ReportField<T = u32>
 where
     T: Into<u32>,
     T: TryFrom<u32>,
@@ -107,7 +107,7 @@ where
 }
 
 #[derive(Debug, Default)]
-pub(self) struct ReportInfo {
+struct ReportInfo {
     pub id: u8,
     pub size: u32,
 }
@@ -126,7 +126,7 @@ impl ReportInfo {
     }
 }
 
-pub(self) trait Report {
+trait Report {
     fn get_info(&self) -> &ReportInfo;
     fn get_info_mut(&mut self) -> &mut ReportInfo;
 

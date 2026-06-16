@@ -1,3 +1,5 @@
+#![expect(unused)]
+
 use std::fs::File;
 
 use crate::reports::{Report, ReportField, ReportInfo};

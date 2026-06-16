@@ -145,27 +145,27 @@ impl<'a> ReportDescriptorParser<'a> {
             consts::USAGE_LAMP_ARRAY => self.root_depth = Some(self.collection_depth),
             consts::USAGE_LAMP_ARRAY_ATTRIBUTES_REPORT => {
                 self.lamp_array_attrs_report = Some(LampArrayAttrsReport::new(id));
-                self.report_kind = Some(ReportKind::LampArrayAttrs);
+                self.report_kind = Some(ReportKind::ArrayAttrs);
             }
             consts::USAGE_LAMP_ATTRIBUTES_REQUEST_REPORT => {
                 self.lamp_attrs_request_report = Some(LampAttrsRequestReport::new(id));
-                self.report_kind = Some(ReportKind::LampAttrsRequest);
+                self.report_kind = Some(ReportKind::AttrsRequest);
             }
             consts::USAGE_LAMP_ATTRIBUTES_RESPONSE_REPORT => {
                 self.lamp_attrs_response_report = Some(LampAttrsResponseReport::new(id));
-                self.report_kind = Some(ReportKind::LampAttrsResponse);
+                self.report_kind = Some(ReportKind::AttrsResponse);
             }
             consts::USAGE_LAMP_MULTI_UPDATE_REPORT => {
                 self.lamp_multi_update_report = Some(LampMultiUpdateReport::new(id));
-                self.report_kind = Some(ReportKind::LampMultiUpdate);
+                self.report_kind = Some(ReportKind::MultiUpdate);
             }
             consts::USAGE_LAMP_RANGE_UPDATE_REPORT => {
                 self.lamp_range_update_report = Some(LampRangeUpdateReport::new(id));
-                self.report_kind = Some(ReportKind::LampRangeUpdate);
+                self.report_kind = Some(ReportKind::RangeUpdate);
             }
             consts::USAGE_LAMP_ARRAY_CONTROL_REPORT => {
                 self.lamp_array_control_report = Some(LampArrayControlReport::new(id));
-                self.report_kind = Some(ReportKind::LampArrayControlReport)
+                self.report_kind = Some(ReportKind::ArrayControlReport)
             }
             _ => self.report_kind = None,
         }
@@ -199,7 +199,7 @@ impl<'a> ReportDescriptorParser<'a> {
             ItemSize::Four => 4,
         };
 
-        assert!(self.bytes.len() >= len + 1);
+        assert!(self.bytes.len() > len);
 
         let slice = &self.bytes[1..(1 + len)];
         self.bytes = &self.bytes[(1 + len)..];
@@ -212,19 +212,19 @@ impl<'a> ReportDescriptorParser<'a> {
 
     fn get_report(&mut self, kind: ReportKind) -> &mut dyn Report {
         match kind {
-            ReportKind::LampArrayAttrs => self.lamp_array_attrs_report.as_mut().unwrap(),
-            ReportKind::LampMultiUpdate => self.lamp_multi_update_report.as_mut().unwrap(),
-            ReportKind::LampRangeUpdate => self.lamp_range_update_report.as_mut().unwrap(),
-            ReportKind::LampArrayControlReport => self.lamp_array_control_report.as_mut().unwrap(),
-            ReportKind::LampAttrsRequest => self.lamp_attrs_request_report.as_mut().unwrap(),
-            ReportKind::LampAttrsResponse => self.lamp_attrs_response_report.as_mut().unwrap(),
+            ReportKind::ArrayAttrs => self.lamp_array_attrs_report.as_mut().unwrap(),
+            ReportKind::MultiUpdate => self.lamp_multi_update_report.as_mut().unwrap(),
+            ReportKind::RangeUpdate => self.lamp_range_update_report.as_mut().unwrap(),
+            ReportKind::ArrayControlReport => self.lamp_array_control_report.as_mut().unwrap(),
+            ReportKind::AttrsRequest => self.lamp_attrs_request_report.as_mut().unwrap(),
+            ReportKind::AttrsResponse => self.lamp_attrs_response_report.as_mut().unwrap(),
         }
     }
 }
 
 /// Global state that can be modified by "Global Items".
 /// (see Section 6.2.2.7 HID Spec)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct GlobalState {
     pub usage_page: Option<u16>,
     pub logical_min: Option<i32>,
@@ -236,19 +236,6 @@ pub struct GlobalState {
     pub report_count: Option<u32>,
 }
 
-impl Default for GlobalState {
-    fn default() -> Self {
-        Self {
-            usage_page: None,
-            logical_min: None,
-            logical_max: None,
-            report_id: 0,
-            report_size: None,
-            report_count: None,
-        }
-    }
-}
-
 #[derive(Debug, PartialEq, Eq)]
 enum DataKind {
     Input,
@@ -258,12 +245,12 @@ enum DataKind {
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 enum ReportKind {
-    LampArrayAttrs,
-    LampAttrsRequest,
-    LampAttrsResponse,
-    LampMultiUpdate,
-    LampRangeUpdate,
-    LampArrayControlReport,
+    ArrayAttrs,
+    AttrsRequest,
+    AttrsResponse,
+    MultiUpdate,
+    RangeUpdate,
+    ArrayControlReport,
 }
 
 // Section 6.2.2.2 of HID Spec.

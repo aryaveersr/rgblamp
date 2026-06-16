@@ -26,13 +26,13 @@ impl LampAttrsResponseReport {
         let bytes = &get_feature(file, &self.info)[1..];
 
         LampAttrs {
-            lamp_id: self.lamp_id.get(&bytes),
-            update_latency_us: self.update_latency_us.get(&bytes),
-            red_level_count: self.red_level_count.get(&bytes),
-            green_level_count: self.green_level_count.get(&bytes),
-            blue_level_count: self.blue_level_count.get(&bytes),
-            intensity_level_count: self.intensity_level_count.get(&bytes),
-            is_programmable: self.is_programmable.get(&bytes),
+            lamp_id: self.lamp_id.get(bytes),
+            update_latency_us: self.update_latency_us.get(bytes),
+            red_level_count: self.red_level_count.get(bytes),
+            green_level_count: self.green_level_count.get(bytes),
+            blue_level_count: self.blue_level_count.get(bytes),
+            intensity_level_count: self.intensity_level_count.get(bytes),
+            is_programmable: self.is_programmable.get(bytes),
         }
     }
 }
