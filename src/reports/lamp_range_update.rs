@@ -1,7 +1,7 @@
 use std::fs::File;
 
 use crate::reports::{
-    Report, ReportField, ReportInfo,
+    Report, ReportField, ReportInfo, consts,
     io::{prep_feature, set_feature},
 };
 
@@ -52,6 +52,22 @@ impl Report for LampRangeUpdateReport {
 
     fn get_info_mut(&mut self) -> &mut ReportInfo {
         &mut self.info
+    }
+
+    fn register(&mut self, usages: Vec<u16>, size: u32) {
+        for usage in usages {
+            let field = self.create_field(size);
+            match usage {
+                consts::USAGE_LAMP_ID_START => self.lamp_id_start = field,
+                consts::USAGE_LAMP_ID_END => self.lamp_id_end = field,
+                consts::USAGE_LAMP_UPDATE_FLAGS => self.lamp_update_flags = field.cast_as(),
+                consts::USAGE_RED_UPDATE_CHANNEL => self.red_update_channel = field,
+                consts::USAGE_GREEN_UPDATE_CHANNEL => self.green_update_channel = field,
+                consts::USAGE_BLUE_UPDATE_CHANNEL => self.blue_update_channel = field,
+                consts::USAGE_INTENSITY_UPDATE_CHANNEL => self.intensity_update_channel = field,
+                _ => (),
+            }
+        }
     }
 }
 

@@ -1,6 +1,6 @@
 use std::fs::File;
 
-use crate::reports::{Report, ReportField, ReportInfo, io::get_feature};
+use crate::reports::{Report, ReportField, ReportInfo, consts, io::get_feature};
 
 #[derive(Debug, Default)]
 pub struct LampAttributesResponseReport {
@@ -44,6 +44,22 @@ impl Report for LampAttributesResponseReport {
 
     fn get_info_mut(&mut self) -> &mut ReportInfo {
         &mut self.info
+    }
+
+    fn register(&mut self, usages: Vec<u16>, size: u32) {
+        for usage in usages {
+            let field = self.create_field(size);
+            match usage {
+                consts::USAGE_LAMP_ID => self.lamp_id = field,
+                consts::USAGE_UPDATE_LATENCY_US => self.update_latency_us = field,
+                consts::USAGE_RED_LEVEL_COUNT => self.red_level_count = field,
+                consts::USAGE_GREEN_LEVEL_COUNT => self.green_level_count = field,
+                consts::USAGE_BLUE_LEVEL_COUNT => self.blue_level_count = field,
+                consts::USAGE_INTENSITY_LEVEL_COUNT => self.intensity_level_count = field,
+                consts::USAGE_IS_PROGRAMMABLE => self.is_programmable = field.cast_as(),
+                _ => (),
+            }
+        }
     }
 }
 

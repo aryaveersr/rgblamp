@@ -1,7 +1,7 @@
 use std::fs::File;
 
 use crate::reports::{
-    Report, ReportField, ReportInfo,
+    Report, ReportField, ReportInfo, consts,
     io::{prep_feature, set_feature},
 };
 
@@ -18,6 +18,15 @@ impl Report for LampArrayControlReport {
 
     fn get_info_mut(&mut self) -> &mut ReportInfo {
         &mut self.info
+    }
+
+    fn register(&mut self, usages: Vec<u16>, size: u32) {
+        for usage in usages {
+            let field = self.create_field(size);
+            if usage == consts::USAGE_AUTONOMOUS_MODE {
+                self.auto_mode = field.cast_as();
+            }
+        }
     }
 }
 

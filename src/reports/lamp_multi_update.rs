@@ -36,6 +36,10 @@ impl Report for LampMultiUpdateReport {
     fn get_info_mut(&mut self) -> &mut ReportInfo {
         &mut self.info
     }
+
+    fn register(&mut self, usages: Vec<u16>, size: u32) {
+        todo!()
+    }
 }
 
 #[derive(Debug)]

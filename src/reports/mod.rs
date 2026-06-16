@@ -36,7 +36,7 @@ pub struct Reports {
 }
 
 impl Reports {
-    pub fn from_descriptor(bytes: &[u8]) -> Option<Self> {
+    pub fn from_descriptor(bytes: &[u8]) -> Self {
         ReportDescriptorParser::new(bytes).parse()
     }
 }
@@ -87,6 +87,20 @@ where
         let value = value.into().to_le_bytes();
         bytes[..self.size].copy_from_slice(&value[..self.size]);
     }
+
+    pub fn cast_as<V>(self) -> ReportField<V>
+    where
+        V: Into<u32>,
+        V: TryFrom<u32>,
+        <V as TryFrom<u32>>::Error: Debug,
+    {
+        assert!(self.size <= std::mem::size_of::<V>());
+        ReportField {
+            offset: self.offset,
+            size: self.size,
+            _phantom: PhantomData,
+        }
+    }
 }
 
 #[derive(Debug, Default)]
@@ -116,7 +130,7 @@ pub(self) trait Report {
     fn register(&mut self, usages: Vec<u16>, size: u32);
 
     // Helpers.
-    fn add_field(&mut self, size: u32) -> ReportField {
+    fn create_field(&mut self, size: u32) -> ReportField {
         let info = self.get_info_mut();
         let field = ReportField::new(info.size, size);
         info.size += size;
