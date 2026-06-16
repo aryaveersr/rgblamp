@@ -120,6 +120,9 @@ impl<'a> ReportDescriptorParser<'a> {
 
             let mut usages = std::mem::take(&mut self.usages);
 
+            // Remarks from Section 6.2.2.8 (Local Items) from HID Spec.
+            // If there are more controls than usages, the last usage applies
+            // to all remaining controls.
             if usages.len() < count {
                 let last_usage = *usages.last().unwrap();
                 usages.resize(count, last_usage);
