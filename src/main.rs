@@ -11,7 +11,7 @@ fn main() {
         .open("/dev/hidraw1")
         .unwrap();
 
-    let y = x.lamp_array_attributes.send(&mut file);
+    let y = x.lamp_array_attrs.send(&mut file);
 
     dbg!(y);
 }

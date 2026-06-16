@@ -6,12 +6,12 @@ use crate::reports::{
 };
 
 #[derive(Debug, Default)]
-pub struct LampAttributesRequestReport {
+pub struct LampAttrsRequestReport {
     pub(super) info: ReportInfo,
     pub(super) lamp_id: ReportField,
 }
 
-impl Report for LampAttributesRequestReport {
+impl Report for LampAttrsRequestReport {
     fn get_info(&self) -> &ReportInfo {
         &self.info
     }
@@ -30,7 +30,7 @@ impl Report for LampAttributesRequestReport {
     }
 }
 
-impl LampAttributesRequestReport {
+impl LampAttrsRequestReport {
     pub fn new(id: u8) -> Self {
         Self {
             info: ReportInfo::new(id),

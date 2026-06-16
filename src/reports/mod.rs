@@ -9,17 +9,16 @@
 use std::{fmt::Debug, marker::PhantomData};
 
 use crate::reports::{
-    lamp_array_attributes::LampArrayAttributesReport, lamp_array_control::LampArrayControlReport,
-    lamp_attributes_request::LampAttributesRequestReport,
-    lamp_attributes_response::LampAttributesResponseReport,
+    lamp_array_attrs::LampArrayAttrsReport, lamp_array_control::LampArrayControlReport,
+    lamp_attrs_request::LampAttrsRequestReport, lamp_attrs_response::LampAttrsResponseReport,
     lamp_multi_update::LampMultiUpdateReport, lamp_range_update::LampRangeUpdateReport,
     parser::ReportDescriptorParser,
 };
 
-pub mod lamp_array_attributes;
+pub mod lamp_array_attrs;
 pub mod lamp_array_control;
-pub mod lamp_attributes_request;
-pub mod lamp_attributes_response;
+pub mod lamp_attrs_request;
+pub mod lamp_attrs_response;
 pub mod lamp_multi_update;
 pub mod lamp_range_update;
 
@@ -27,9 +26,9 @@ mod io;
 mod parser;
 
 pub struct Reports {
-    pub lamp_array_attributes: LampArrayAttributesReport,
-    pub lamp_attributes_request: LampAttributesRequestReport,
-    pub lamp_attributes_response: LampAttributesResponseReport,
+    pub lamp_array_attrs: LampArrayAttrsReport,
+    pub lamp_attrs_request: LampAttrsRequestReport,
+    pub lamp_attrs_response: LampAttrsResponseReport,
     pub lamp_multi_update: LampMultiUpdateReport,
     pub lamp_range_update: LampRangeUpdateReport,
     pub lamp_array_control: LampArrayControlReport,

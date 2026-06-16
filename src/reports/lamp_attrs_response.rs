@@ -3,7 +3,7 @@ use std::fs::File;
 use crate::reports::{Report, ReportField, ReportInfo, consts, io::get_feature};
 
 #[derive(Debug, Default)]
-pub struct LampAttributesResponseReport {
+pub struct LampAttrsResponseReport {
     pub(self) info: ReportInfo,
     pub(self) lamp_id: ReportField,
     pub(self) update_latency_us: ReportField,
@@ -14,7 +14,7 @@ pub struct LampAttributesResponseReport {
     pub(self) is_programmable: ReportField<bool>,
 }
 
-impl LampAttributesResponseReport {
+impl LampAttrsResponseReport {
     pub fn new(id: u8) -> Self {
         Self {
             info: ReportInfo::new(id),
@@ -22,10 +22,10 @@ impl LampAttributesResponseReport {
         }
     }
 
-    pub fn send(&self, file: &mut File) -> LampAttributes {
+    pub fn send(&self, file: &mut File) -> LampAttrs {
         let bytes = &get_feature(file, &self.info)[1..];
 
-        LampAttributes {
+        LampAttrs {
             lamp_id: self.lamp_id.get(&bytes),
             update_latency_us: self.update_latency_us.get(&bytes),
             red_level_count: self.red_level_count.get(&bytes),
@@ -37,7 +37,7 @@ impl LampAttributesResponseReport {
     }
 }
 
-impl Report for LampAttributesResponseReport {
+impl Report for LampAttrsResponseReport {
     fn get_info(&self) -> &ReportInfo {
         &self.info
     }
@@ -64,7 +64,7 @@ impl Report for LampAttributesResponseReport {
 }
 
 #[derive(Debug)]
-pub struct LampAttributes {
+pub struct LampAttrs {
     pub lamp_id: u32,
     pub update_latency_us: u32,
     pub red_level_count: u32,

@@ -3,8 +3,8 @@
 use bilge::prelude::*;
 
 use crate::reports::{
-    LampArrayAttributesReport, LampAttributesRequestReport, LampAttributesResponseReport,
-    LampMultiUpdateReport, Report, Reports, consts, lamp_array_control::LampArrayControlReport,
+    LampArrayAttrsReport, LampAttrsRequestReport, LampAttrsResponseReport, LampMultiUpdateReport,
+    Report, Reports, consts, lamp_array_control::LampArrayControlReport,
     lamp_range_update::LampRangeUpdateReport,
 };
 
@@ -26,9 +26,9 @@ pub struct ReportDescriptorParser<'a> {
     root_depth: Option<usize>,
     report_kind: Option<ReportKind>,
     // Reports.
-    lamp_array_attributes_report: Option<LampArrayAttributesReport>,
-    lamp_attributes_request_report: Option<LampAttributesRequestReport>,
-    lamp_attributes_response_report: Option<LampAttributesResponseReport>,
+    lamp_array_attrs_report: Option<LampArrayAttrsReport>,
+    lamp_attrs_request_report: Option<LampAttrsRequestReport>,
+    lamp_attrs_response_report: Option<LampAttrsResponseReport>,
     lamp_multi_update_report: Option<LampMultiUpdateReport>,
     lamp_range_update_report: Option<LampRangeUpdateReport>,
     lamp_array_control_report: Option<LampArrayControlReport>,
@@ -53,9 +53,9 @@ impl<'a> ReportDescriptorParser<'a> {
         }
 
         Reports {
-            lamp_array_attributes: self.lamp_array_attributes_report.unwrap(),
-            lamp_attributes_request: self.lamp_attributes_request_report.unwrap(),
-            lamp_attributes_response: self.lamp_attributes_response_report.unwrap(),
+            lamp_array_attrs: self.lamp_array_attrs_report.unwrap(),
+            lamp_attrs_request: self.lamp_attrs_request_report.unwrap(),
+            lamp_attrs_response: self.lamp_attrs_response_report.unwrap(),
             lamp_multi_update: self.lamp_multi_update_report.unwrap(),
             lamp_range_update: self.lamp_range_update_report.unwrap(),
             lamp_array_control: self.lamp_array_control_report.unwrap(),
@@ -134,16 +134,16 @@ impl<'a> ReportDescriptorParser<'a> {
         match usage {
             consts::USAGE_LAMP_ARRAY => self.root_depth = Some(self.collection_depth),
             consts::USAGE_LAMP_ARRAY_ATTRIBUTES_REPORT => {
-                self.lamp_array_attributes_report = Some(LampArrayAttributesReport::new(id));
-                self.report_kind = Some(ReportKind::LampArrayAttributes);
+                self.lamp_array_attrs_report = Some(LampArrayAttrsReport::new(id));
+                self.report_kind = Some(ReportKind::LampArrayAttrs);
             }
             consts::USAGE_LAMP_ATTRIBUTES_REQUEST_REPORT => {
-                self.lamp_attributes_request_report = Some(LampAttributesRequestReport::new(id));
-                self.report_kind = Some(ReportKind::LampAttributesRequest);
+                self.lamp_attrs_request_report = Some(LampAttrsRequestReport::new(id));
+                self.report_kind = Some(ReportKind::LampAttrsRequest);
             }
             consts::USAGE_LAMP_ATTRIBUTES_RESPONSE_REPORT => {
-                self.lamp_attributes_response_report = Some(LampAttributesResponseReport::new(id));
-                self.report_kind = Some(ReportKind::LampAttributesResponse);
+                self.lamp_attrs_response_report = Some(LampAttrsResponseReport::new(id));
+                self.report_kind = Some(ReportKind::LampAttrsResponse);
             }
             consts::USAGE_LAMP_MULTI_UPDATE_REPORT => {
                 self.lamp_multi_update_report = Some(LampMultiUpdateReport::new(id));
@@ -213,16 +213,12 @@ impl<'a> ReportDescriptorParser<'a> {
 
     fn get_report(&mut self, kind: ReportKind) -> &mut dyn Report {
         match kind {
-            ReportKind::LampArrayAttributes => self.lamp_array_attributes_report.as_mut().unwrap(),
+            ReportKind::LampArrayAttrs => self.lamp_array_attrs_report.as_mut().unwrap(),
             ReportKind::LampMultiUpdate => self.lamp_multi_update_report.as_mut().unwrap(),
             ReportKind::LampRangeUpdate => self.lamp_range_update_report.as_mut().unwrap(),
             ReportKind::LampArrayControlReport => self.lamp_array_control_report.as_mut().unwrap(),
-            ReportKind::LampAttributesRequest => {
-                self.lamp_attributes_request_report.as_mut().unwrap()
-            }
-            ReportKind::LampAttributesResponse => {
-                self.lamp_attributes_response_report.as_mut().unwrap()
-            }
+            ReportKind::LampAttrsRequest => self.lamp_attrs_request_report.as_mut().unwrap(),
+            ReportKind::LampAttrsResponse => self.lamp_attrs_response_report.as_mut().unwrap(),
         }
     }
 }
@@ -263,9 +259,9 @@ enum DataKind {
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 enum ReportKind {
-    LampArrayAttributes,
-    LampAttributesRequest,
-    LampAttributesResponse,
+    LampArrayAttrs,
+    LampAttrsRequest,
+    LampAttrsResponse,
     LampMultiUpdate,
     LampRangeUpdate,
     LampArrayControlReport,
