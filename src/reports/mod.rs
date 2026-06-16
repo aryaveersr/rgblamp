@@ -8,6 +8,8 @@
 
 use std::{fmt::Debug, marker::PhantomData};
 
+use bilge::prelude::*;
+
 use crate::reports::{
     lamp_array_attrs::LampArrayAttrsReport, lamp_array_control::LampArrayControlReport,
     lamp_attrs_request::LampAttrsRequestReport, lamp_attrs_response::LampAttrsResponseReport,
@@ -41,15 +43,15 @@ impl Reports {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 struct ReportField<T = u32>
 where
     T: Into<u32>,
     T: TryFrom<u32>,
     <T as TryFrom<u32>>::Error: Debug,
 {
-    pub(self) offset: usize,
-    pub(self) size: usize,
+    offset: usize,
+    size: usize,
     _phantom: PhantomData<T>,
 }
 
@@ -138,6 +140,27 @@ trait Report {
         let field = ReportField::new(info.size, size);
         info.size += size;
         field
+    }
+}
+
+#[bitsize(16)]
+#[derive(FromBits, DebugBits, DefaultBits)]
+pub struct UpdateFlags {
+    complete: bool,
+    _reserved: u15,
+}
+
+impl TryFrom<u32> for UpdateFlags {
+    type Error = <u16 as TryFrom<u32>>::Error;
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        Ok(u16::try_from(value)?.into())
+    }
+}
+
+impl From<UpdateFlags> for u32 {
+    fn from(value: UpdateFlags) -> Self {
+        u16::from(value) as u32
     }
 }
 

@@ -7,8 +7,8 @@ use crate::reports::{
 
 #[derive(Debug, Default)]
 pub struct LampArrayControlReport {
-    pub(super) info: ReportInfo,
-    pub(super) auto_mode: ReportField<bool>,
+    info: ReportInfo,
+    auto_mode: ReportField<bool>,
 }
 
 impl Report for LampArrayControlReport {

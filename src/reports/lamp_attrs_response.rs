@@ -4,14 +4,14 @@ use crate::reports::{Report, ReportField, ReportInfo, consts, io::get_feature};
 
 #[derive(Debug, Default)]
 pub struct LampAttrsResponseReport {
-    pub(self) info: ReportInfo,
-    pub(self) lamp_id: ReportField,
-    pub(self) update_latency_us: ReportField,
-    pub(self) red_level_count: ReportField,
-    pub(self) green_level_count: ReportField,
-    pub(self) blue_level_count: ReportField,
-    pub(self) intensity_level_count: ReportField,
-    pub(self) is_programmable: ReportField<bool>,
+    info: ReportInfo,
+    lamp_id: ReportField,
+    update_latency_us: ReportField,
+    red_level_count: ReportField,
+    green_level_count: ReportField,
+    blue_level_count: ReportField,
+    intensity_level_count: ReportField,
+    is_programmable: ReportField<bool>,
 }
 
 impl LampAttrsResponseReport {

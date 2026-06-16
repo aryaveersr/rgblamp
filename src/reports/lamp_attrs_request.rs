@@ -7,8 +7,8 @@ use crate::reports::{
 
 #[derive(Debug, Default)]
 pub struct LampAttrsRequestReport {
-    pub(super) info: ReportInfo,
-    pub(super) lamp_id: ReportField,
+    info: ReportInfo,
+    lamp_id: ReportField,
 }
 
 impl Report for LampAttrsRequestReport {
