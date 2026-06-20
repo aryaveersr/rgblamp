@@ -64,7 +64,6 @@ fn main() {
                         println!(
                             "Multiple devices found. You need to specify Device ID along with Lamp ID"
                         );
-                        return;
                     } else if devices[0].attrs().lamp_count <= lamp_id {
                         println!("Lamp ID out of range.");
                     } else {
@@ -74,7 +73,6 @@ fn main() {
                 (Some(device_id), None) => {
                     if device_id >= devices.len() {
                         println!("Device ID out of range.");
-                        return;
                     } else {
                         devices[device_id].set_color_all(color);
                     }
@@ -82,7 +80,6 @@ fn main() {
                 (Some(device_id), Some(lamp_id)) => {
                     if device_id >= devices.len() {
                         println!("Device ID out of range.");
-                        return;
                     } else if devices[device_id].attrs().lamp_count <= lamp_id {
                         println!("Lamp ID out of range.");
                     } else {
