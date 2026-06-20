@@ -28,7 +28,7 @@ impl LampArrayAttrsReport {
 }
 
 impl Report for LampArrayAttrsReport {
-    fn get_info(&self) -> &ReportInfo {
+    fn info(&self) -> &ReportInfo {
         &self.info
     }
 

@@ -38,7 +38,7 @@ impl LampAttrsResponseReport {
 }
 
 impl Report for LampAttrsResponseReport {
-    fn get_info(&self) -> &ReportInfo {
+    fn info(&self) -> &ReportInfo {
         &self.info
     }
 

@@ -12,7 +12,7 @@ pub struct LampAttrsRequestReport {
 }
 
 impl Report for LampAttrsRequestReport {
-    fn get_info(&self) -> &ReportInfo {
+    fn info(&self) -> &ReportInfo {
         &self.info
     }
 

@@ -12,7 +12,7 @@ pub struct LampArrayControlReport {
 }
 
 impl Report for LampArrayControlReport {
-    fn get_info(&self) -> &ReportInfo {
+    fn info(&self) -> &ReportInfo {
         &self.info
     }
 

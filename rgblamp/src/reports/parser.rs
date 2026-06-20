@@ -179,7 +179,7 @@ impl<'a> ReportDescriptorParser<'a> {
         assert!(self.collection_depth > 0);
 
         if let Some(kind) = self.report_kind {
-            self.get_report(kind).get_info().validate();
+            self.get_report(kind).info().validate();
         }
 
         if Some(self.collection_depth) == self.root_depth {

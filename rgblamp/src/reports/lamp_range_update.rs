@@ -46,7 +46,7 @@ impl LampRangeUpdateReport {
 }
 
 impl Report for LampRangeUpdateReport {
-    fn get_info(&self) -> &ReportInfo {
+    fn info(&self) -> &ReportInfo {
         &self.info
     }
 

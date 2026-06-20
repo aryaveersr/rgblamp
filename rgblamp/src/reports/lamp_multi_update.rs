@@ -81,7 +81,7 @@ impl LampMultiUpdateReport {
 }
 
 impl Report for LampMultiUpdateReport {
-    fn get_info(&self) -> &ReportInfo {
+    fn info(&self) -> &ReportInfo {
         &self.info
     }
 

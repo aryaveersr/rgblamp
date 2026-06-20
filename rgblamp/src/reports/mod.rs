@@ -71,7 +71,7 @@ impl ReportInfo {
 }
 
 trait Report {
-    fn get_info(&self) -> &ReportInfo;
+    fn info(&self) -> &ReportInfo;
     fn register(&mut self, usages: &[u16], size: u32);
 }
 
