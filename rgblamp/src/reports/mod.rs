@@ -6,7 +6,7 @@
 //! The HUT (HID Usage Tables) document has the information for the LampArray interface
 //! under Section 26: Lighting and Illumination Page.
 
-use std::{fmt::Debug, marker::PhantomData};
+use std::{fmt::Debug, marker::PhantomData, ops::AddAssign};
 
 use bilge::prelude::*;
 
@@ -43,7 +43,7 @@ impl Reports {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 struct ReportField<T = u32>
 where
     T: Into<u32>,
@@ -77,6 +77,10 @@ where
         }
     }
 
+    pub fn is_uninit(&self) -> bool {
+        self.offset == 0 && self.size == 0
+    }
+
     pub fn get(&self, bytes: &[u8]) -> T {
         assert!(bytes.len() >= self.size + self.offset);
 
@@ -105,6 +109,17 @@ where
             size: self.size,
             _phantom: PhantomData,
         }
+    }
+}
+
+impl<T> AddAssign<usize> for ReportField<T>
+where
+    T: Into<u32>,
+    T: TryFrom<u32>,
+    <T as TryFrom<u32>>::Error: Debug,
+{
+    fn add_assign(&mut self, rhs: usize) {
+        self.offset += rhs;
     }
 }
 

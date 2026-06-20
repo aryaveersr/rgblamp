@@ -1,5 +1,7 @@
 use std::fs::File;
 
+use color::Rgba8;
+
 use crate::reports::{
     LampUpdateFlags, Report, ReportField, ReportInfo, consts,
     io::{prep_feature, set_feature},
@@ -8,14 +10,16 @@ use crate::reports::{
 #[derive(Debug, Default)]
 pub struct LampMultiUpdateReport {
     info: ReportInfo,
-    lamp_count: ReportField,
-    lamp_update_flags: ReportField<LampUpdateFlags>,
     slots: u32,
-    lamp_id_first: ReportField,
-    red_update_channel_first: ReportField,
-    green_update_channel_first: ReportField,
-    blue_update_channel_first: ReportField,
-    intensity_update_channel_first: ReportField,
+
+    lamp_count: ReportField,
+    update_flags: ReportField<LampUpdateFlags>,
+
+    lamp_id: ReportField,
+    red: ReportField<u8>,
+    green: ReportField<u8>,
+    blue: ReportField<u8>,
+    intensity: ReportField<u8>,
 }
 
 impl LampMultiUpdateReport {
@@ -31,35 +35,45 @@ impl LampMultiUpdateReport {
     }
 
     pub fn send(&self, file: &mut File, params: LampMultiUpdateParams) {
-        assert!(params.items.len() <= self.slots as usize);
-        assert!(params.items.len() <= u32::MAX as usize);
+        let LampMultiUpdateParams {
+            update_flags,
+            lamp_ids,
+            colors,
+        } = params;
+
+        assert_eq!(lamp_ids.len(), colors.len());
+        assert!(lamp_ids.len() <= self.slots as usize);
 
         let mut buffer = prep_feature(&self.info);
         let bytes = &mut buffer[1..];
 
-        self.lamp_count.set(bytes, params.items.len() as u32);
-        self.lamp_update_flags.set(bytes, params.lamp_update_flags);
+        self.lamp_count.set(bytes, lamp_ids.len() as u32);
+        self.update_flags.set(bytes, update_flags);
 
-        let mut lamp_id = self.lamp_id_first.clone();
-        let mut red_channel = self.red_update_channel_first.clone();
-        let mut green_channel = self.green_update_channel_first.clone();
-        let mut blue_channel = self.blue_update_channel_first.clone();
-        let mut intensity_channel = self.intensity_update_channel_first.clone();
+        let mut lamp_id = self.lamp_id;
 
-        let color_size = red_channel.size * 4;
+        for id in lamp_ids {
+            lamp_id.set(bytes, *id);
+            lamp_id += lamp_id.size;
+        }
 
-        for item in params.items {
-            lamp_id.set(bytes, item.lamp_id);
-            red_channel.set(bytes, item.red_update_channel);
-            green_channel.set(bytes, item.green_update_channel);
-            blue_channel.set(bytes, item.blue_update_channel);
-            intensity_channel.set(bytes, item.intensity_update_channel);
+        let mut red = self.red;
+        let mut green = self.green;
+        let mut blue = self.blue;
+        let mut intensity = self.intensity;
 
-            lamp_id.offset += lamp_id.size;
-            red_channel.offset += color_size;
-            green_channel.offset += color_size;
-            blue_channel.offset += color_size;
-            intensity_channel.offset += color_size;
+        let color_size = red.size * 4;
+
+        for color in colors {
+            red.set(bytes, color.r);
+            green.set(bytes, color.g);
+            blue.set(bytes, color.b);
+            intensity.set(bytes, color.a);
+
+            red += color_size;
+            green += color_size;
+            blue += color_size;
+            intensity += color_size;
         }
 
         set_feature(file, &mut buffer);
@@ -80,32 +94,24 @@ impl Report for LampMultiUpdateReport {
             let field = self.create_field(size);
             match *usage {
                 consts::USAGE_LAMP_COUNT => self.lamp_count = field,
-                consts::USAGE_LAMP_UPDATE_FLAGS => self.lamp_update_flags = field.cast_as(),
+                consts::USAGE_LAMP_UPDATE_FLAGS => self.update_flags = field.cast_as(),
                 consts::USAGE_LAMP_ID => {
-                    if self.slots == 0 {
-                        self.lamp_id_first = field.cast_as();
-                    }
                     self.slots += 1;
+                    if self.slots == 1 {
+                        self.lamp_id = field.cast_as();
+                    }
                 }
-                consts::USAGE_RED_UPDATE_CHANNEL
-                    if self.red_update_channel_first == ReportField::default() =>
-                {
-                    self.red_update_channel_first = field
+                consts::USAGE_RED_UPDATE_CHANNEL if self.red.is_uninit() => {
+                    self.red = field.cast_as();
                 }
-                consts::USAGE_GREEN_UPDATE_CHANNEL
-                    if self.green_update_channel_first == ReportField::default() =>
-                {
-                    self.green_update_channel_first = field
+                consts::USAGE_GREEN_UPDATE_CHANNEL if self.green.is_uninit() => {
+                    self.green = field.cast_as();
                 }
-                consts::USAGE_BLUE_UPDATE_CHANNEL
-                    if self.blue_update_channel_first == ReportField::default() =>
-                {
-                    self.blue_update_channel_first = field
+                consts::USAGE_BLUE_UPDATE_CHANNEL if self.blue.is_uninit() => {
+                    self.blue = field.cast_as();
                 }
-                consts::USAGE_INTENSITY_UPDATE_CHANNEL
-                    if self.intensity_update_channel_first == ReportField::default() =>
-                {
-                    self.intensity_update_channel_first = field
+                consts::USAGE_INTENSITY_UPDATE_CHANNEL if self.intensity.is_uninit() => {
+                    self.intensity = field.cast_as();
                 }
                 _ => (),
             }
@@ -115,15 +121,7 @@ impl Report for LampMultiUpdateReport {
 
 #[derive(Debug)]
 pub struct LampMultiUpdateParams<'a> {
-    pub lamp_update_flags: LampUpdateFlags,
-    pub items: &'a [LampMultiUpdateItem],
-}
-
-#[derive(Debug)]
-pub struct LampMultiUpdateItem {
-    pub lamp_id: u32,
-    pub red_update_channel: u32,
-    pub green_update_channel: u32,
-    pub blue_update_channel: u32,
-    pub intensity_update_channel: u32,
+    pub update_flags: LampUpdateFlags,
+    pub lamp_ids: &'a [u32],
+    pub colors: &'a [Rgba8],
 }
