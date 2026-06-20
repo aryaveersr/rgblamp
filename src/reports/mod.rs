@@ -38,7 +38,7 @@ pub struct Reports {
 }
 
 impl Reports {
-    pub fn from_descriptor(bytes: &[u8]) -> Self {
+    pub fn from_descriptor(bytes: &[u8]) -> Option<Self> {
         ReportDescriptorParser::new(bytes).parse()
     }
 }
@@ -165,6 +165,8 @@ impl From<UpdateFlags> for u32 {
 }
 
 mod consts {
+    pub const USAGE_PAGE_LIGHTING: u16 = 0x59;
+
     pub const USAGE_LAMP_ARRAY: u16 = 0x1;
     pub const USAGE_LAMP_ARRAY_ATTRIBUTES_REPORT: u16 = 0x2;
     pub const USAGE_LAMP_COUNT: u16 = 0x3;

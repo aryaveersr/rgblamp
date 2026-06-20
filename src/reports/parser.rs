@@ -42,7 +42,7 @@ impl<'a> ReportDescriptorParser<'a> {
         }
     }
 
-    pub fn parse(mut self) -> Reports {
+    pub fn parse(mut self) -> Option<Reports> {
         while let Some((tag, data)) = self.next() {
             match tag.kind() {
                 ItemKind::Global => self.handle_global_item(tag.tag(), data),
@@ -52,14 +52,14 @@ impl<'a> ReportDescriptorParser<'a> {
             }
         }
 
-        Reports {
-            lamp_array_attrs: self.lamp_array_attrs_report.unwrap(),
-            lamp_attrs_request: self.lamp_attrs_request_report.unwrap(),
-            lamp_attrs_response: self.lamp_attrs_response_report.unwrap(),
-            lamp_multi_update: self.lamp_multi_update_report.unwrap(),
-            lamp_range_update: self.lamp_range_update_report.unwrap(),
-            lamp_array_control: self.lamp_array_control_report.unwrap(),
-        }
+        Some(Reports {
+            lamp_array_attrs: self.lamp_array_attrs_report?,
+            lamp_attrs_request: self.lamp_attrs_request_report?,
+            lamp_attrs_response: self.lamp_attrs_response_report?,
+            lamp_multi_update: self.lamp_multi_update_report?,
+            lamp_range_update: self.lamp_range_update_report?,
+            lamp_array_control: self.lamp_array_control_report?,
+        })
     }
 
     fn handle_global_item(&mut self, kind: u4, data: u32) {
@@ -137,6 +137,10 @@ impl<'a> ReportDescriptorParser<'a> {
 
     fn start_collection(&mut self) {
         self.collection_depth += 1;
+
+        if self.globals.usage_page != Some(consts::USAGE_PAGE_LIGHTING) {
+            return;
+        }
 
         let id = self.globals.report_id;
         let usage = self.usages.pop().unwrap();
