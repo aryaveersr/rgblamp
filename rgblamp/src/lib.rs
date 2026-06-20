@@ -59,6 +59,12 @@ impl LampArray {
         reports.lamp_attrs_request.send(&mut file, 0);
         for _ in 0..array_attrs.lamp_count {
             let attrs = reports.lamp_attrs_response.get(&mut file);
+
+            assert!(
+                attrs.is_programmable,
+                "Non-programmable lamps are not supported (TODO)"
+            );
+
             lamp_attrs.push(attrs);
         }
 
@@ -70,16 +76,12 @@ impl LampArray {
         }
     }
 
-    pub fn attrs(&self) -> &LampArrayAttrs {
-        &self.array_attrs
+    pub fn lamp_count(&self) -> u32 {
+        self.array_attrs.lamp_count
     }
 
     pub fn min_update_interval(&self) -> Duration {
         Duration::from_micros(self.array_attrs.min_update_interval_us as u64)
-    }
-
-    pub fn lamp_attrs(&self) -> &[LampAttrs] {
-        &self.lamp_attrs
     }
 
     pub fn set_auto_mode(&mut self, auto_mode: bool) {
@@ -88,26 +90,26 @@ impl LampArray {
             .send(&mut self.file, auto_mode);
     }
 
-    pub fn set_color_all<T: ColorSpace>(&mut self, color: AlphaColor<T>) {
-        let color = color.to_rgba8();
-
-        self.reports.lamp_range_update.send(
-            &mut self.file,
-            LampRangeUpdateParams {
-                lamp_ids: 0..=(self.array_attrs.lamp_count - 1),
-                update_flags: LampUpdateFlags::new(true),
-                color,
-            },
-        );
-    }
-
-    pub fn set_color_lamp<T: ColorSpace>(&mut self, lamp_id: u32, color: AlphaColor<T>) {
+    pub fn set_lamp<T: ColorSpace>(&mut self, lamp_id: u32, color: AlphaColor<T>) {
         let color = color.to_rgba8();
 
         self.reports.lamp_range_update.send(
             &mut self.file,
             LampRangeUpdateParams {
                 lamp_ids: lamp_id..=lamp_id,
+                update_flags: LampUpdateFlags::new(true),
+                color,
+            },
+        );
+    }
+
+    pub fn set_all_lamps<T: ColorSpace>(&mut self, color: AlphaColor<T>) {
+        let color = color.to_rgba8();
+
+        self.reports.lamp_range_update.send(
+            &mut self.file,
+            LampRangeUpdateParams {
+                lamp_ids: 0..=(self.array_attrs.lamp_count - 1),
                 update_flags: LampUpdateFlags::new(true),
                 color,
             },
