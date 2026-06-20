@@ -1,6 +1,7 @@
 use std::{
     fs::{self, File, OpenOptions},
     path::PathBuf,
+    time::Duration,
 };
 
 use color::{AlphaColor, ColorSpace};
@@ -23,14 +24,19 @@ pub struct LampArray {
 impl LampArray {
     pub fn enumerate() -> Vec<Self> {
         let mut lamparrays = Vec::new();
+        let mut entries: Vec<_> = fs::read_dir("/sys/class/hidraw")
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .collect();
 
-        for entry in fs::read_dir("/sys/class/hidraw").unwrap() {
-            let entry_path = entry.unwrap().path();
-            let descriptor = entry_path.clone().join("device/report_descriptor");
+        entries.sort_by_key(|dir| dir.file_name());
+
+        for entry in entries {
+            let descriptor = entry.path().join("device/report_descriptor");
             let bytes = fs::read(descriptor).unwrap();
 
             if let Some(reports) = Reports::from_descriptor(&bytes) {
-                let device_path = PathBuf::from("/dev").join(entry_path.file_name().unwrap());
+                let device_path = PathBuf::from("/dev").join(entry.path().file_name().unwrap());
                 let file = OpenOptions::new()
                     .read(true)
                     .write(true)
@@ -68,6 +74,20 @@ impl LampArray {
         &self.array_attrs
     }
 
+    pub fn min_update_interval(&self) -> Duration {
+        Duration::from_micros(self.array_attrs.min_update_interval_us as u64)
+    }
+
+    pub fn lamp_attrs(&self) -> &[LampAttrs] {
+        &self.lamp_attrs
+    }
+
+    pub fn set_auto_mode(&mut self, auto_mode: bool) {
+        self.reports
+            .lamp_array_control
+            .send(&mut self.file, auto_mode);
+    }
+
     pub fn set_color_all<T: ColorSpace>(&mut self, color: AlphaColor<T>) {
         let color = color.to_rgba8();
 
@@ -85,9 +105,20 @@ impl LampArray {
         );
     }
 
-    pub fn set_auto_mode(&mut self, auto_mode: bool) {
-        self.reports
-            .lamp_array_control
-            .send(&mut self.file, auto_mode);
+    pub fn set_color_lamp<T: ColorSpace>(&mut self, lamp_id: u32, color: AlphaColor<T>) {
+        let color = color.to_rgba8();
+
+        self.reports.lamp_range_update.send(
+            &mut self.file,
+            LampRangeUpdateParams {
+                lamp_id_start: lamp_id,
+                lamp_id_end: lamp_id,
+                red_update_channel: color.r as u32,
+                green_update_channel: color.g as u32,
+                blue_update_channel: color.b as u32,
+                intensity_update_channel: color.a as u32,
+                lamp_update_flags: LampUpdateFlags::new(true),
+            },
+        );
     }
 }
