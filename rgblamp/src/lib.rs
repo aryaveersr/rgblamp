@@ -1,14 +1,15 @@
 use std::{
     fs::{self, File, OpenOptions},
+    ops::RangeInclusive,
     path::PathBuf,
     time::Duration,
 };
 
-use color::{AlphaColor, ColorSpace};
+use color::Rgba8;
 
 use crate::reports::{
     LampUpdateFlags, Reports, lamp_array_attrs::LampArrayAttrs, lamp_attrs_response::LampAttrs,
-    lamp_range_update::LampRangeUpdateParams,
+    lamp_multi_update::LampMultiUpdateParams, lamp_range_update::LampRangeUpdateParams,
 };
 
 mod reports;
@@ -84,15 +85,17 @@ impl LampArray {
         Duration::from_micros(self.array_attrs.min_update_interval_us as u64)
     }
 
+    pub fn lamp_attrs(&self) -> &[LampAttrs] {
+        &self.lamp_attrs
+    }
+
     pub fn set_auto_mode(&mut self, auto_mode: bool) {
         self.reports
             .lamp_array_control
             .send(&mut self.file, auto_mode);
     }
 
-    pub fn set_lamp<T: ColorSpace>(&mut self, lamp_id: u32, color: AlphaColor<T>) {
-        let color = color.to_rgba8();
-
+    pub fn set_lamp(&mut self, lamp_id: u32, color: Rgba8) {
         self.reports.lamp_range_update.send(
             &mut self.file,
             LampRangeUpdateParams {
@@ -103,9 +106,7 @@ impl LampArray {
         );
     }
 
-    pub fn set_all_lamps<T: ColorSpace>(&mut self, color: AlphaColor<T>) {
-        let color = color.to_rgba8();
-
+    pub fn set_all_lamps(&mut self, color: Rgba8) {
         self.reports.lamp_range_update.send(
             &mut self.file,
             LampRangeUpdateParams {
@@ -115,4 +116,36 @@ impl LampArray {
             },
         );
     }
+
+    pub fn set_lamps_range(&mut self, lamp_ids: RangeInclusive<u32>, color: Rgba8, is_last: bool) {
+        self.reports.lamp_range_update.send(
+            &mut self.file,
+            LampRangeUpdateParams {
+                lamp_ids,
+                color,
+                update_flags: LampUpdateFlags::new(is_last),
+            },
+        );
+    }
+
+    pub fn set_multiple_lamps(&mut self, items: &[LampUpdateItem], is_last: bool) {
+        let slots = self.reports.lamp_multi_update.slots() as usize;
+        let last_idx = items.len().div_ceil(slots);
+
+        for (idx, chunk) in items.chunks(slots).enumerate() {
+            self.reports.lamp_multi_update.send(
+                &mut self.file,
+                LampMultiUpdateParams {
+                    update_flags: LampUpdateFlags::new(is_last && last_idx == idx),
+                    items: chunk,
+                },
+            );
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct LampUpdateItem {
+    lamp_id: u32,
+    color: Rgba8,
 }

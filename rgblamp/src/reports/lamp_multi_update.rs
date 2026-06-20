@@ -1,11 +1,12 @@
 use std::fs::File;
 
-use color::Rgba8;
-
-use crate::reports::{
-    LampUpdateFlags, Report, ReportField, ReportInfo,
-    io::{prep_feature, set_feature},
-    usage,
+use crate::{
+    LampUpdateItem,
+    reports::{
+        LampUpdateFlags, Report, ReportField, ReportInfo,
+        io::{prep_feature, set_feature},
+        usage,
+    },
 };
 
 #[derive(Debug, Default)]
@@ -38,25 +39,18 @@ impl LampMultiUpdateReport {
     pub fn send(&self, file: &mut File, params: LampMultiUpdateParams) {
         let LampMultiUpdateParams {
             update_flags,
-            lamp_ids,
-            colors,
+            items,
         } = params;
 
-        assert_eq!(lamp_ids.len(), colors.len());
-        assert!(lamp_ids.len() <= self.slots as usize);
+        assert!(items.len() <= self.slots as usize);
 
         let mut buffer = prep_feature(&self.info);
         let bytes = &mut buffer[1..];
 
-        self.lamp_count.set(bytes, lamp_ids.len() as u32);
+        self.lamp_count.set(bytes, items.len() as u32);
         self.update_flags.set(bytes, update_flags);
 
         let mut lamp_id = self.lamp_id;
-
-        for id in lamp_ids {
-            lamp_id.set(bytes, *id);
-            lamp_id += lamp_id.size;
-        }
 
         let mut red = self.red;
         let mut green = self.green;
@@ -65,11 +59,14 @@ impl LampMultiUpdateReport {
 
         let color_size = red.size * 4;
 
-        for color in colors {
-            red.set(bytes, color.r);
-            green.set(bytes, color.g);
-            blue.set(bytes, color.b);
-            intensity.set(bytes, color.a);
+        for item in items {
+            lamp_id.set(bytes, item.lamp_id);
+            lamp_id += lamp_id.size;
+
+            red.set(bytes, item.color.r);
+            green.set(bytes, item.color.g);
+            blue.set(bytes, item.color.b);
+            intensity.set(bytes, item.color.a);
 
             red += color_size;
             green += color_size;
@@ -119,6 +116,5 @@ impl Report for LampMultiUpdateReport {
 #[derive(Debug)]
 pub struct LampMultiUpdateParams<'a> {
     pub update_flags: LampUpdateFlags,
-    pub lamp_ids: &'a [u32],
-    pub colors: &'a [Rgba8],
+    pub items: &'a [LampUpdateItem],
 }

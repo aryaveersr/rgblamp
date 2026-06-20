@@ -46,7 +46,7 @@ fn main() {
             }
 
             let color = match parse_color(&color) {
-                Ok(color) => color.to_alpha_color::<Srgb>(),
+                Ok(color) => color.to_alpha_color::<Srgb>().to_rgba8(),
                 Err(err) => {
                     println!("Invalid color: {err}.");
                     return;
