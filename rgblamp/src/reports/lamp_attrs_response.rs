@@ -1,6 +1,6 @@
 use std::fs::File;
 
-use crate::reports::{Report, ReportField, ReportInfo, consts, io::get_feature};
+use crate::reports::{Report, ReportField, ReportInfo, io::get_feature, usage};
 
 #[derive(Debug, Default)]
 pub struct LampAttrsResponseReport {
@@ -46,13 +46,13 @@ impl Report for LampAttrsResponseReport {
         for usage in usages {
             let field = self.info.create_field(size);
             match *usage {
-                consts::USAGE_LAMP_ID => self.lamp_id = field,
-                consts::USAGE_UPDATE_LATENCY_US => self.update_latency_us = field,
-                consts::USAGE_RED_LEVEL_COUNT => self.red_level_count = field,
-                consts::USAGE_GREEN_LEVEL_COUNT => self.green_level_count = field,
-                consts::USAGE_BLUE_LEVEL_COUNT => self.blue_level_count = field,
-                consts::USAGE_INTENSITY_LEVEL_COUNT => self.intensity_level_count = field,
-                consts::USAGE_IS_PROGRAMMABLE => self.is_programmable = field.cast_as(),
+                usage::LAMP_ID => self.lamp_id = field,
+                usage::UPDATE_LATENCY_US => self.update_latency_us = field,
+                usage::RED_LEVEL_COUNT => self.red_level_count = field,
+                usage::GREEN_LEVEL_COUNT => self.green_level_count = field,
+                usage::BLUE_LEVEL_COUNT => self.blue_level_count = field,
+                usage::INTENSITY_LEVEL_COUNT => self.intensity_level_count = field,
+                usage::IS_PROGRAMMABLE => self.is_programmable = field.cast_as(),
                 _ => (),
             }
         }

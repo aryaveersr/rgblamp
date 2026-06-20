@@ -1,6 +1,6 @@
 use std::fs::File;
 
-use crate::reports::{Report, ReportField, ReportInfo, consts, io::get_feature};
+use crate::reports::{Report, ReportField, ReportInfo, io::get_feature, usage};
 
 #[derive(Debug, Default)]
 pub struct LampArrayAttrsReport {
@@ -36,8 +36,8 @@ impl Report for LampArrayAttrsReport {
         for usage in usages {
             let field = self.info.create_field(size);
             match *usage {
-                consts::USAGE_LAMP_COUNT => self.lamp_count = field,
-                consts::USAGE_MIN_UPDATE_INTERVAL_US => self.min_update_interval_us = field,
+                usage::LAMP_COUNT => self.lamp_count = field,
+                usage::MIN_UPDATE_INTERVAL_US => self.min_update_interval_us = field,
                 _ => (),
             }
         }

@@ -1,8 +1,9 @@
 use std::fs::File;
 
 use crate::reports::{
-    Report, ReportField, ReportInfo, consts,
+    Report, ReportField, ReportInfo,
     io::{prep_feature, set_feature},
+    usage,
 };
 
 #[derive(Debug, Default)]
@@ -19,7 +20,7 @@ impl Report for LampAttrsRequestReport {
     fn register(&mut self, usages: &[u16], size: u32) {
         for usage in usages {
             let field = self.info.create_field(size);
-            if *usage == consts::USAGE_LAMP_ID {
+            if *usage == usage::LAMP_ID {
                 self.lamp_id = field;
             }
         }

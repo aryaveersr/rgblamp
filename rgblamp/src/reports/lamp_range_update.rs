@@ -1,8 +1,9 @@
 use std::fs::File;
 
 use crate::reports::{
-    LampUpdateFlags, Report, ReportField, ReportInfo, consts,
+    LampUpdateFlags, Report, ReportField, ReportInfo,
     io::{prep_feature, set_feature},
+    usage,
 };
 
 #[derive(Debug, Default)]
@@ -54,13 +55,13 @@ impl Report for LampRangeUpdateReport {
         for usage in usages {
             let field = self.info.create_field(size);
             match *usage {
-                consts::USAGE_LAMP_ID_START => self.lamp_id_start = field,
-                consts::USAGE_LAMP_ID_END => self.lamp_id_end = field,
-                consts::USAGE_LAMP_UPDATE_FLAGS => self.lamp_update_flags = field.cast_as(),
-                consts::USAGE_RED_UPDATE_CHANNEL => self.red_update_channel = field,
-                consts::USAGE_GREEN_UPDATE_CHANNEL => self.green_update_channel = field,
-                consts::USAGE_BLUE_UPDATE_CHANNEL => self.blue_update_channel = field,
-                consts::USAGE_INTENSITY_UPDATE_CHANNEL => self.intensity_update_channel = field,
+                usage::LAMP_ID_START => self.lamp_id_start = field,
+                usage::LAMP_ID_END => self.lamp_id_end = field,
+                usage::LAMP_UPDATE_FLAGS => self.lamp_update_flags = field.cast_as(),
+                usage::RED_UPDATE_CHANNEL => self.red_update_channel = field,
+                usage::GREEN_UPDATE_CHANNEL => self.green_update_channel = field,
+                usage::BLUE_UPDATE_CHANNEL => self.blue_update_channel = field,
+                usage::INTENSITY_UPDATE_CHANNEL => self.intensity_update_channel = field,
                 _ => (),
             }
         }

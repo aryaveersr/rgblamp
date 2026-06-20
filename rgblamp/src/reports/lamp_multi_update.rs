@@ -3,8 +3,9 @@ use std::fs::File;
 use color::Rgba8;
 
 use crate::reports::{
-    LampUpdateFlags, Report, ReportField, ReportInfo, consts,
+    LampUpdateFlags, Report, ReportField, ReportInfo,
     io::{prep_feature, set_feature},
+    usage,
 };
 
 #[derive(Debug, Default)]
@@ -89,24 +90,24 @@ impl Report for LampMultiUpdateReport {
         for usage in usages {
             let field = self.info.create_field(size);
             match *usage {
-                consts::USAGE_LAMP_COUNT => self.lamp_count = field,
-                consts::USAGE_LAMP_UPDATE_FLAGS => self.update_flags = field.cast_as(),
-                consts::USAGE_LAMP_ID => {
+                usage::LAMP_COUNT => self.lamp_count = field,
+                usage::LAMP_UPDATE_FLAGS => self.update_flags = field.cast_as(),
+                usage::LAMP_ID => {
                     self.slots += 1;
                     if self.slots == 1 {
                         self.lamp_id = field.cast_as();
                     }
                 }
-                consts::USAGE_RED_UPDATE_CHANNEL if self.red.is_uninit() => {
+                usage::RED_UPDATE_CHANNEL if self.red.is_uninit() => {
                     self.red = field.cast_as();
                 }
-                consts::USAGE_GREEN_UPDATE_CHANNEL if self.green.is_uninit() => {
+                usage::GREEN_UPDATE_CHANNEL if self.green.is_uninit() => {
                     self.green = field.cast_as();
                 }
-                consts::USAGE_BLUE_UPDATE_CHANNEL if self.blue.is_uninit() => {
+                usage::BLUE_UPDATE_CHANNEL if self.blue.is_uninit() => {
                     self.blue = field.cast_as();
                 }
-                consts::USAGE_INTENSITY_UPDATE_CHANNEL if self.intensity.is_uninit() => {
+                usage::INTENSITY_UPDATE_CHANNEL if self.intensity.is_uninit() => {
                     self.intensity = field.cast_as();
                 }
                 _ => (),

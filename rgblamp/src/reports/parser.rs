@@ -4,8 +4,8 @@ use bilge::prelude::*;
 
 use crate::reports::{
     LampArrayAttrsReport, LampAttrsRequestReport, LampAttrsResponseReport, LampMultiUpdateReport,
-    Report, Reports, consts, lamp_array_control::LampArrayControlReport,
-    lamp_range_update::LampRangeUpdateReport,
+    Report, Reports, lamp_array_control::LampArrayControlReport,
+    lamp_range_update::LampRangeUpdateReport, usage,
 };
 
 #[derive(Default)]
@@ -138,7 +138,7 @@ impl<'a> ReportDescriptorParser<'a> {
     fn start_collection(&mut self) {
         self.collection_depth += 1;
 
-        if self.globals.usage_page != Some(consts::USAGE_PAGE_LIGHTING) {
+        if self.globals.usage_page != Some(usage::PAGE_LIGHTING) {
             return;
         }
 
@@ -146,28 +146,28 @@ impl<'a> ReportDescriptorParser<'a> {
         let usage = self.usages.pop().unwrap();
 
         match usage {
-            consts::USAGE_LAMP_ARRAY => self.root_depth = Some(self.collection_depth),
-            consts::USAGE_LAMP_ARRAY_ATTRIBUTES_REPORT => {
+            usage::LAMP_ARRAY => self.root_depth = Some(self.collection_depth),
+            usage::LAMP_ARRAY_ATTRIBUTES_REPORT => {
                 self.lamp_array_attrs_report = Some(LampArrayAttrsReport::new(id));
                 self.report_kind = Some(ReportKind::ArrayAttrs);
             }
-            consts::USAGE_LAMP_ATTRIBUTES_REQUEST_REPORT => {
+            usage::LAMP_ATTRIBUTES_REQUEST_REPORT => {
                 self.lamp_attrs_request_report = Some(LampAttrsRequestReport::new(id));
                 self.report_kind = Some(ReportKind::AttrsRequest);
             }
-            consts::USAGE_LAMP_ATTRIBUTES_RESPONSE_REPORT => {
+            usage::LAMP_ATTRIBUTES_RESPONSE_REPORT => {
                 self.lamp_attrs_response_report = Some(LampAttrsResponseReport::new(id));
                 self.report_kind = Some(ReportKind::AttrsResponse);
             }
-            consts::USAGE_LAMP_MULTI_UPDATE_REPORT => {
+            usage::LAMP_MULTI_UPDATE_REPORT => {
                 self.lamp_multi_update_report = Some(LampMultiUpdateReport::new(id));
                 self.report_kind = Some(ReportKind::MultiUpdate);
             }
-            consts::USAGE_LAMP_RANGE_UPDATE_REPORT => {
+            usage::LAMP_RANGE_UPDATE_REPORT => {
                 self.lamp_range_update_report = Some(LampRangeUpdateReport::new(id));
                 self.report_kind = Some(ReportKind::RangeUpdate);
             }
-            consts::USAGE_LAMP_ARRAY_CONTROL_REPORT => {
+            usage::LAMP_ARRAY_CONTROL_REPORT => {
                 self.lamp_array_control_report = Some(LampArrayControlReport::new(id));
                 self.report_kind = Some(ReportKind::ArrayControlReport)
             }
