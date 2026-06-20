@@ -16,13 +16,9 @@ impl Report for LampAttrsRequestReport {
         &self.info
     }
 
-    fn get_info_mut(&mut self) -> &mut ReportInfo {
-        &mut self.info
-    }
-
     fn register(&mut self, usages: &[u16], size: u32) {
         for usage in usages {
-            let field = self.create_field(size);
+            let field = self.info.create_field(size);
             if *usage == consts::USAGE_LAMP_ID {
                 self.lamp_id = field;
             }

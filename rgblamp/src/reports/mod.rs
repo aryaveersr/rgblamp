@@ -6,15 +6,15 @@
 //! The HUT (HID Usage Tables) document has the information for the LampArray interface
 //! under Section 26: Lighting and Illumination Page.
 
-use std::{fmt::Debug, marker::PhantomData, ops::AddAssign};
+use std::fmt::Debug;
 
 use bilge::prelude::*;
 
 use crate::reports::{
-    lamp_array_attrs::LampArrayAttrsReport, lamp_array_control::LampArrayControlReport,
-    lamp_attrs_request::LampAttrsRequestReport, lamp_attrs_response::LampAttrsResponseReport,
-    lamp_multi_update::LampMultiUpdateReport, lamp_range_update::LampRangeUpdateReport,
-    parser::ReportDescriptorParser,
+    field::ReportField, lamp_array_attrs::LampArrayAttrsReport,
+    lamp_array_control::LampArrayControlReport, lamp_attrs_request::LampAttrsRequestReport,
+    lamp_attrs_response::LampAttrsResponseReport, lamp_multi_update::LampMultiUpdateReport,
+    lamp_range_update::LampRangeUpdateReport, parser::ReportDescriptorParser,
 };
 
 pub mod lamp_array_attrs;
@@ -24,6 +24,7 @@ pub mod lamp_attrs_response;
 pub mod lamp_multi_update;
 pub mod lamp_range_update;
 
+mod field;
 mod io;
 mod parser;
 
@@ -40,86 +41,6 @@ pub struct Reports {
 impl Reports {
     pub fn from_descriptor(bytes: &[u8]) -> Option<Self> {
         ReportDescriptorParser::new(bytes).parse()
-    }
-}
-
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-struct ReportField<T = u32>
-where
-    T: Into<u32>,
-    T: TryFrom<u32>,
-    <T as TryFrom<u32>>::Error: Debug,
-{
-    offset: usize,
-    size: usize,
-    _phantom: PhantomData<T>,
-}
-
-impl<T> ReportField<T>
-where
-    T: Into<u32>,
-    T: TryFrom<u32>,
-    <T as TryFrom<u32>>::Error: Debug,
-{
-    pub fn new(offset_bits: u32, size_bits: u32) -> Self {
-        assert_eq!(offset_bits % 8, 0);
-        assert_eq!(size_bits % 8, 0);
-
-        let offset = offset_bits as usize / 8;
-        let size = size_bits as usize / 8;
-
-        assert!(size <= std::mem::size_of::<T>());
-
-        Self {
-            offset,
-            size,
-            _phantom: PhantomData,
-        }
-    }
-
-    pub fn is_uninit(&self) -> bool {
-        self.offset == 0 && self.size == 0
-    }
-
-    pub fn get(&self, bytes: &[u8]) -> T {
-        assert!(bytes.len() >= self.size + self.offset);
-
-        let mut buffer = [0u8; 4];
-        buffer[..self.size].copy_from_slice(&bytes[self.offset..(self.offset + self.size)]);
-        u32::from_le_bytes(buffer).try_into().unwrap()
-    }
-
-    pub fn set(&self, bytes: &mut [u8], value: T) {
-        assert!(bytes.len() >= self.size + self.offset);
-
-        let value = value.into().to_le_bytes();
-        bytes[self.offset..(self.offset + self.size)].copy_from_slice(&value[..self.size]);
-    }
-
-    pub fn cast_as<V>(self) -> ReportField<V>
-    where
-        V: Into<u32>,
-        V: TryFrom<u32>,
-        <V as TryFrom<u32>>::Error: Debug,
-    {
-        assert!(self.size <= std::mem::size_of::<V>());
-
-        ReportField {
-            offset: self.offset,
-            size: self.size,
-            _phantom: PhantomData,
-        }
-    }
-}
-
-impl<T> AddAssign<usize> for ReportField<T>
-where
-    T: Into<u32>,
-    T: TryFrom<u32>,
-    <T as TryFrom<u32>>::Error: Debug,
-{
-    fn add_assign(&mut self, rhs: usize) {
-        self.offset += rhs;
     }
 }
 
@@ -141,21 +62,17 @@ impl ReportInfo {
     pub fn bytes_len(&self) -> usize {
         self.size as usize / 8
     }
+
+    fn create_field(&mut self, size: u32) -> ReportField {
+        let field = ReportField::new(self.size, size);
+        self.size += size;
+        field
+    }
 }
 
 trait Report {
     fn get_info(&self) -> &ReportInfo;
-    fn get_info_mut(&mut self) -> &mut ReportInfo;
-
     fn register(&mut self, usages: &[u16], size: u32);
-
-    // Helpers.
-    fn create_field(&mut self, size: u32) -> ReportField {
-        let info = self.get_info_mut();
-        let field = ReportField::new(info.size, size);
-        info.size += size;
-        field
-    }
 }
 
 #[bitsize(16)]

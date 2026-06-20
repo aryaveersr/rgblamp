@@ -85,13 +85,9 @@ impl Report for LampMultiUpdateReport {
         &self.info
     }
 
-    fn get_info_mut(&mut self) -> &mut ReportInfo {
-        &mut self.info
-    }
-
     fn register(&mut self, usages: &[u16], size: u32) {
         for usage in usages {
-            let field = self.create_field(size);
+            let field = self.info.create_field(size);
             match *usage {
                 consts::USAGE_LAMP_COUNT => self.lamp_count = field,
                 consts::USAGE_LAMP_UPDATE_FLAGS => self.update_flags = field.cast_as(),
