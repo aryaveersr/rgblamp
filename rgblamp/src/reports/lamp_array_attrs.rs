@@ -17,7 +17,7 @@ impl LampArrayAttrsReport {
         }
     }
 
-    pub fn send(&self, file: &mut File) -> LampArrayAttrs {
+    pub fn get(&self, file: &mut File) -> LampArrayAttrs {
         let bytes = &get_feature(file, &self.info)[1..];
 
         LampArrayAttrs {

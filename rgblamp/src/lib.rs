@@ -51,14 +51,14 @@ impl LampArray {
     }
 
     fn new(mut file: File, reports: Reports) -> Self {
-        let array_attrs = reports.lamp_array_attrs.send(&mut file);
+        let array_attrs = reports.lamp_array_attrs.get(&mut file);
         let mut lamp_attrs = Vec::with_capacity(array_attrs.lamp_count as usize);
 
         assert!(array_attrs.lamp_count > 0);
 
         reports.lamp_attrs_request.send(&mut file, 0);
         for _ in 0..array_attrs.lamp_count {
-            let attrs = reports.lamp_attrs_response.send(&mut file);
+            let attrs = reports.lamp_attrs_response.get(&mut file);
             lamp_attrs.push(attrs);
         }
 

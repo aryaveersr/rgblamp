@@ -22,7 +22,7 @@ impl LampAttrsResponseReport {
         }
     }
 
-    pub fn send(&self, file: &mut File) -> LampAttrs {
+    pub fn get(&self, file: &mut File) -> LampAttrs {
         let bytes = &get_feature(file, &self.info)[1..];
 
         LampAttrs {
