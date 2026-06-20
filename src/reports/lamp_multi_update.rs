@@ -1,7 +1,7 @@
 use std::fs::File;
 
 use crate::reports::{
-    Report, ReportField, ReportInfo, UpdateFlags, consts,
+    LampUpdateFlags, Report, ReportField, ReportInfo, consts,
     io::{prep_feature, set_feature},
 };
 
@@ -9,7 +9,7 @@ use crate::reports::{
 pub struct LampMultiUpdateReport {
     info: ReportInfo,
     lamp_count: ReportField,
-    lamp_update_flags: ReportField<UpdateFlags>,
+    lamp_update_flags: ReportField<LampUpdateFlags>,
     slots: u32,
     lamp_id_first: ReportField,
     red_update_channel_first: ReportField,
@@ -115,7 +115,7 @@ impl Report for LampMultiUpdateReport {
 
 #[derive(Debug)]
 pub struct LampMultiUpdateParams<'a> {
-    pub lamp_update_flags: UpdateFlags,
+    pub lamp_update_flags: LampUpdateFlags,
     pub items: &'a [LampMultiUpdateItem],
 }
 

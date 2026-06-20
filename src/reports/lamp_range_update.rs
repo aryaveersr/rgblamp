@@ -1,7 +1,7 @@
 use std::fs::File;
 
 use crate::reports::{
-    Report, ReportField, ReportInfo, UpdateFlags, consts,
+    LampUpdateFlags, Report, ReportField, ReportInfo, consts,
     io::{prep_feature, set_feature},
 };
 
@@ -10,7 +10,7 @@ pub struct LampRangeUpdateReport {
     info: ReportInfo,
     lamp_id_start: ReportField,
     lamp_id_end: ReportField,
-    lamp_update_flags: ReportField<UpdateFlags>,
+    lamp_update_flags: ReportField<LampUpdateFlags>,
     red_update_channel: ReportField,
     green_update_channel: ReportField,
     blue_update_channel: ReportField,
@@ -75,7 +75,7 @@ impl Report for LampRangeUpdateReport {
 pub struct LampRangeUpdateParams {
     pub lamp_id_start: u32,
     pub lamp_id_end: u32,
-    pub lamp_update_flags: UpdateFlags,
+    pub lamp_update_flags: LampUpdateFlags,
     pub red_update_channel: u32,
     pub green_update_channel: u32,
     pub blue_update_channel: u32,

@@ -5,4 +5,5 @@ edition = "2024"
 
 [dependencies]
 bilge = "0.3.0"
+color = "0.3.3"
 nix = { version = "0.31.3", features = ["ioctl"] }

@@ -145,12 +145,12 @@ trait Report {
 
 #[bitsize(16)]
 #[derive(FromBits, DebugBits, DefaultBits)]
-pub struct UpdateFlags {
+pub struct LampUpdateFlags {
     pub complete: bool,
     _reserved: u15,
 }
 
-impl TryFrom<u32> for UpdateFlags {
+impl TryFrom<u32> for LampUpdateFlags {
     type Error = <u16 as TryFrom<u32>>::Error;
 
     fn try_from(value: u32) -> Result<Self, Self::Error> {
@@ -158,8 +158,8 @@ impl TryFrom<u32> for UpdateFlags {
     }
 }
 
-impl From<UpdateFlags> for u32 {
-    fn from(value: UpdateFlags) -> Self {
+impl From<LampUpdateFlags> for u32 {
+    fn from(value: LampUpdateFlags) -> Self {
         u16::from(value) as u32
     }
 }
