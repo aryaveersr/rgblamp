@@ -5,13 +5,15 @@ use crate::reports::{Report, ReportField, ReportInfo, io::get_feature, usage};
 #[derive(Debug, Default)]
 pub struct LampAttrsResponseReport {
     info: ReportInfo,
+
     lamp_id: ReportField,
     update_latency_us: ReportField,
+    is_programmable: ReportField<bool>,
+
     red_level_count: ReportField,
     green_level_count: ReportField,
     blue_level_count: ReportField,
     intensity_level_count: ReportField,
-    is_programmable: ReportField<bool>,
 }
 
 impl LampAttrsResponseReport {
@@ -28,11 +30,12 @@ impl LampAttrsResponseReport {
         LampAttrs {
             lamp_id: self.lamp_id.get(bytes),
             update_latency_us: self.update_latency_us.get(bytes),
+            is_programmable: self.is_programmable.get(bytes),
+
             red_level_count: self.red_level_count.get(bytes),
             green_level_count: self.green_level_count.get(bytes),
             blue_level_count: self.blue_level_count.get(bytes),
             intensity_level_count: self.intensity_level_count.get(bytes),
-            is_programmable: self.is_programmable.get(bytes),
         }
     }
 }
@@ -48,11 +51,11 @@ impl Report for LampAttrsResponseReport {
             match *usage {
                 usage::LAMP_ID => self.lamp_id = field,
                 usage::UPDATE_LATENCY_US => self.update_latency_us = field,
+                usage::IS_PROGRAMMABLE => self.is_programmable = field.cast_as(),
                 usage::RED_LEVEL_COUNT => self.red_level_count = field,
                 usage::GREEN_LEVEL_COUNT => self.green_level_count = field,
                 usage::BLUE_LEVEL_COUNT => self.blue_level_count = field,
                 usage::INTENSITY_LEVEL_COUNT => self.intensity_level_count = field,
-                usage::IS_PROGRAMMABLE => self.is_programmable = field.cast_as(),
                 _ => (),
             }
         }
@@ -63,9 +66,10 @@ impl Report for LampAttrsResponseReport {
 pub struct LampAttrs {
     pub lamp_id: u32,
     pub update_latency_us: u32,
+    pub is_programmable: bool,
+
     pub red_level_count: u32,
     pub green_level_count: u32,
     pub blue_level_count: u32,
     pub intensity_level_count: u32,
-    pub is_programmable: bool,
 }

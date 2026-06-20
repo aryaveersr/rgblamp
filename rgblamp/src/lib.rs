@@ -94,13 +94,9 @@ impl LampArray {
         self.reports.lamp_range_update.send(
             &mut self.file,
             LampRangeUpdateParams {
-                lamp_id_start: 0,
-                lamp_id_end: self.array_attrs.lamp_count - 1,
-                red_update_channel: color.r as u32,
-                green_update_channel: color.g as u32,
-                blue_update_channel: color.b as u32,
-                intensity_update_channel: color.a as u32,
-                lamp_update_flags: LampUpdateFlags::new(true),
+                lamp_ids: 0..=(self.array_attrs.lamp_count - 1),
+                update_flags: LampUpdateFlags::new(true),
+                color,
             },
         );
     }
@@ -111,13 +107,9 @@ impl LampArray {
         self.reports.lamp_range_update.send(
             &mut self.file,
             LampRangeUpdateParams {
-                lamp_id_start: lamp_id,
-                lamp_id_end: lamp_id,
-                red_update_channel: color.r as u32,
-                green_update_channel: color.g as u32,
-                blue_update_channel: color.b as u32,
-                intensity_update_channel: color.a as u32,
-                lamp_update_flags: LampUpdateFlags::new(true),
+                lamp_ids: lamp_id..=lamp_id,
+                update_flags: LampUpdateFlags::new(true),
+                color,
             },
         );
     }

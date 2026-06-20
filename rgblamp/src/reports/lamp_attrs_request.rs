@@ -9,6 +9,7 @@ use crate::reports::{
 #[derive(Debug, Default)]
 pub struct LampAttrsRequestReport {
     info: ReportInfo,
+
     lamp_id: ReportField,
 }
 
@@ -20,8 +21,9 @@ impl Report for LampAttrsRequestReport {
     fn register(&mut self, usages: &[u16], size: u32) {
         for usage in usages {
             let field = self.info.create_field(size);
-            if *usage == usage::LAMP_ID {
-                self.lamp_id = field;
+            match *usage {
+                usage::LAMP_ID => self.lamp_id = field,
+                _ => (),
             }
         }
     }

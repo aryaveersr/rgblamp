@@ -5,6 +5,7 @@ use crate::reports::{Report, ReportField, ReportInfo, io::get_feature, usage};
 #[derive(Debug, Default)]
 pub struct LampArrayAttrsReport {
     info: ReportInfo,
+
     lamp_count: ReportField,
     min_update_interval_us: ReportField,
 }

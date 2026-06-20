@@ -1,4 +1,6 @@
-use std::fs::File;
+use std::{fs::File, ops::RangeInclusive};
+
+use color::Rgba8;
 
 use crate::reports::{
     LampUpdateFlags, Report, ReportField, ReportInfo,
@@ -9,13 +11,15 @@ use crate::reports::{
 #[derive(Debug, Default)]
 pub struct LampRangeUpdateReport {
     info: ReportInfo,
+
     lamp_id_start: ReportField,
     lamp_id_end: ReportField,
-    lamp_update_flags: ReportField<LampUpdateFlags>,
-    red_update_channel: ReportField,
-    green_update_channel: ReportField,
-    blue_update_channel: ReportField,
-    intensity_update_channel: ReportField,
+    update_flags: ReportField<LampUpdateFlags>,
+
+    red: ReportField<u8>,
+    green: ReportField<u8>,
+    blue: ReportField<u8>,
+    intensity: ReportField<u8>,
 }
 
 impl LampRangeUpdateReport {
@@ -27,20 +31,23 @@ impl LampRangeUpdateReport {
     }
 
     pub fn send(&self, file: &mut File, params: LampRangeUpdateParams) {
+        let LampRangeUpdateParams {
+            lamp_ids,
+            update_flags,
+            color,
+        } = params;
+
         let mut buffer = prep_feature(&self.info);
         let bytes = &mut buffer[1..];
 
-        self.lamp_id_start.set(bytes, params.lamp_id_start);
-        self.lamp_id_end.set(bytes, params.lamp_id_end);
-        self.lamp_update_flags.set(bytes, params.lamp_update_flags);
-        self.red_update_channel
-            .set(bytes, params.red_update_channel);
-        self.green_update_channel
-            .set(bytes, params.green_update_channel);
-        self.blue_update_channel
-            .set(bytes, params.blue_update_channel);
-        self.intensity_update_channel
-            .set(bytes, params.intensity_update_channel);
+        self.lamp_id_start.set(bytes, *lamp_ids.start());
+        self.lamp_id_end.set(bytes, *lamp_ids.end());
+        self.update_flags.set(bytes, update_flags);
+
+        self.red.set(bytes, color.r);
+        self.green.set(bytes, color.g);
+        self.blue.set(bytes, color.b);
+        self.intensity.set(bytes, color.a);
 
         set_feature(file, &mut buffer);
     }
@@ -57,11 +64,11 @@ impl Report for LampRangeUpdateReport {
             match *usage {
                 usage::LAMP_ID_START => self.lamp_id_start = field,
                 usage::LAMP_ID_END => self.lamp_id_end = field,
-                usage::LAMP_UPDATE_FLAGS => self.lamp_update_flags = field.cast_as(),
-                usage::RED_UPDATE_CHANNEL => self.red_update_channel = field,
-                usage::GREEN_UPDATE_CHANNEL => self.green_update_channel = field,
-                usage::BLUE_UPDATE_CHANNEL => self.blue_update_channel = field,
-                usage::INTENSITY_UPDATE_CHANNEL => self.intensity_update_channel = field,
+                usage::LAMP_UPDATE_FLAGS => self.update_flags = field.cast_as(),
+                usage::RED_UPDATE_CHANNEL => self.red = field.cast_as(),
+                usage::GREEN_UPDATE_CHANNEL => self.green = field.cast_as(),
+                usage::BLUE_UPDATE_CHANNEL => self.blue = field.cast_as(),
+                usage::INTENSITY_UPDATE_CHANNEL => self.intensity = field.cast_as(),
                 _ => (),
             }
         }
@@ -70,11 +77,7 @@ impl Report for LampRangeUpdateReport {
 
 #[derive(Debug)]
 pub struct LampRangeUpdateParams {
-    pub lamp_id_start: u32,
-    pub lamp_id_end: u32,
-    pub lamp_update_flags: LampUpdateFlags,
-    pub red_update_channel: u32,
-    pub green_update_channel: u32,
-    pub blue_update_channel: u32,
-    pub intensity_update_channel: u32,
+    pub lamp_ids: RangeInclusive<u32>,
+    pub update_flags: LampUpdateFlags,
+    pub color: Rgba8,
 }
