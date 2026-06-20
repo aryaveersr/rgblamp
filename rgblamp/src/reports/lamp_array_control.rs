@@ -20,9 +20,8 @@ impl Report for LampArrayControlReport {
     fn register(&mut self, usages: &[u16], size: u32) {
         for usage in usages {
             let field = self.info.create_field(size);
-            match *usage {
-                usage::AUTONOMOUS_MODE => self.auto_mode = field.cast_as(),
-                _ => (),
+            if *usage == usage::AUTONOMOUS_MODE {
+                self.auto_mode = field.cast_as();
             }
         }
     }

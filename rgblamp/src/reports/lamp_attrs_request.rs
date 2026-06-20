@@ -21,9 +21,8 @@ impl Report for LampAttrsRequestReport {
     fn register(&mut self, usages: &[u16], size: u32) {
         for usage in usages {
             let field = self.info.create_field(size);
-            match *usage {
-                usage::LAMP_ID => self.lamp_id = field,
-                _ => (),
+            if *usage == usage::LAMP_ID {
+                self.lamp_id = field;
             }
         }
     }
