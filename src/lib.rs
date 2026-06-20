@@ -3,7 +3,7 @@ use std::{
     path::PathBuf,
 };
 
-use crate::reports::Reports;
+use crate::reports::{Reports, lamp_array_attrs::LampArrayAttrs, lamp_attrs_response::LampAttrs};
 
 mod reports;
 
@@ -11,6 +11,8 @@ mod reports;
 pub struct LampArray {
     file: File,
     reports: Reports,
+    array_attrs: LampArrayAttrs,
+    lamp_attrs: Vec<LampAttrs>,
 }
 
 impl LampArray {
@@ -30,11 +32,30 @@ impl LampArray {
                     .open(device_path)
                     .unwrap();
 
-                let lamparray = Self { file, reports };
-                lamparrays.push(lamparray);
+                lamparrays.push(Self::new(file, reports));
             }
         }
 
         lamparrays
+    }
+
+    fn new(mut file: File, reports: Reports) -> Self {
+        let array_attrs = reports.lamp_array_attrs.send(&mut file);
+        let mut lamp_attrs = Vec::with_capacity(array_attrs.lamp_count as usize);
+
+        if array_attrs.lamp_count > 0 {
+            reports.lamp_attrs_request.send(&mut file, 0);
+            for _ in 0..array_attrs.lamp_count {
+                let attrs = reports.lamp_attrs_response.send(&mut file);
+                lamp_attrs.push(attrs);
+            }
+        }
+
+        Self {
+            file,
+            reports,
+            array_attrs,
+            lamp_attrs,
+        }
     }
 }
