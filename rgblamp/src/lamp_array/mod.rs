@@ -206,7 +206,7 @@ impl LampArray {
         }
 
         let slots = self.reports.lamp_multi_update.slots() as usize;
-        let last_idx = items.len().div_ceil(slots);
+        let last_idx = items.len().div_ceil(slots) - 1;
 
         for (idx, chunk) in items.chunks(slots).enumerate() {
             self.reports.lamp_multi_update.send(
