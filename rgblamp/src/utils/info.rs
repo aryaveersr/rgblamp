@@ -22,7 +22,7 @@ impl ReportInfo {
     }
 
     pub fn validate(&self) -> LampResult<()> {
-        if self.size % 8 == 0 {
+        if self.size.is_multiple_of(8) {
             Ok(())
         } else {
             Err(Error::parser("report size is not byte-aligned"))
