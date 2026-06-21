@@ -7,12 +7,17 @@ use std::{
 
 use color::Rgba8;
 
-use crate::reports::{
-    LampUpdateFlags, Reports, lamp_array_attrs::LampArrayAttrs, lamp_attrs_response::LampAttrs,
-    lamp_multi_update::LampMultiUpdateParams, lamp_range_update::LampRangeUpdateParams,
+use crate::{
+    parser::parse_report_descriptor,
+    reports::{
+        LampUpdateFlags, Reports, lamp_array_attrs::LampArrayAttrs, lamp_attrs_response::LampAttrs,
+        lamp_multi_update::LampMultiUpdateParams, lamp_range_update::LampRangeUpdateParams,
+    },
 };
 
+mod parser;
 mod reports;
+mod utils;
 
 #[derive(Debug)]
 pub struct LampArray {
@@ -36,7 +41,7 @@ impl LampArray {
             let descriptor = entry.path().join("device/report_descriptor");
             let bytes = fs::read(descriptor).unwrap();
 
-            if let Some(reports) = Reports::from_descriptor(&bytes) {
+            if let Some(reports) = parse_report_descriptor(&bytes) {
                 let device_path = PathBuf::from("/dev").join(entry.path().file_name().unwrap());
                 let file = OpenOptions::new()
                     .read(true)

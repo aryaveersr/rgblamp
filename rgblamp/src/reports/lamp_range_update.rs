@@ -2,10 +2,13 @@ use std::{fs::File, ops::RangeInclusive};
 
 use color::Rgba8;
 
-use crate::reports::{
-    LampUpdateFlags, Report, ReportField, ReportInfo,
-    io::{prep_feature, set_feature},
-    usage,
+use crate::{
+    reports::{LampUpdateFlags, Report, ReportInfo},
+    utils::{
+        field::ReportField,
+        io::{prep_feature, set_feature},
+        usage,
+    },
 };
 
 #[derive(Debug, Default)]

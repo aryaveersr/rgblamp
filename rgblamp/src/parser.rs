@@ -2,11 +2,19 @@
 
 use bilge::prelude::*;
 
-use crate::reports::{
-    LampArrayAttrsReport, LampAttrsRequestReport, LampAttrsResponseReport, LampMultiUpdateReport,
-    Report, Reports, lamp_array_control::LampArrayControlReport,
-    lamp_range_update::LampRangeUpdateReport, usage,
+use crate::{
+    reports::{
+        Report, Reports, lamp_array_attrs::LampArrayAttrsReport,
+        lamp_array_control::LampArrayControlReport, lamp_attrs_request::LampAttrsRequestReport,
+        lamp_attrs_response::LampAttrsResponseReport, lamp_multi_update::LampMultiUpdateReport,
+        lamp_range_update::LampRangeUpdateReport,
+    },
+    utils::usage,
 };
+
+pub fn parse_report_descriptor(bytes: &[u8]) -> Option<Reports> {
+    ReportDescriptorParser::new(bytes).parse()
+}
 
 #[derive(Default)]
 pub struct ReportDescriptorParser<'a> {
@@ -35,14 +43,14 @@ pub struct ReportDescriptorParser<'a> {
 }
 
 impl<'a> ReportDescriptorParser<'a> {
-    pub fn new(bytes: &'a [u8]) -> Self {
+    fn new(bytes: &'a [u8]) -> Self {
         Self {
             bytes,
             ..Default::default()
         }
     }
 
-    pub fn parse(mut self) -> Option<Reports> {
+    fn parse(mut self) -> Option<Reports> {
         while let Some((tag, data)) = self.next() {
             match tag.kind() {
                 ItemKind::Global => self.handle_global_item(tag.tag(), data),

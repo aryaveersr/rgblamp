@@ -1,6 +1,6 @@
 use std::{fs::File, os::fd::AsRawFd};
 
-use crate::reports::ReportInfo;
+use crate::utils::info::ReportInfo;
 
 mod ioctl {
     use nix::ioctl_readwrite_buf;

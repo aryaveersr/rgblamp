@@ -2,8 +2,9 @@ use std::fs::File;
 
 use crate::{
     LampUpdateItem,
-    reports::{
-        LampUpdateFlags, Report, ReportField, ReportInfo,
+    reports::{LampUpdateFlags, Report, ReportInfo},
+    utils::{
+        field::ReportField,
         io::{prep_feature, set_feature},
         usage,
     },

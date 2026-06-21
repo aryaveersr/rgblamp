@@ -1,6 +1,9 @@
 use std::fs::File;
 
-use crate::reports::{Report, ReportField, ReportInfo, io::get_feature, usage};
+use crate::{
+    reports::{Report, ReportInfo},
+    utils::{field::ReportField, io::get_feature, usage},
+};
 
 #[derive(Debug, Default)]
 pub struct LampAttrsResponseReport {
