@@ -10,6 +10,9 @@ pub enum Error {
     #[error("invalid lamp id")]
     InvalidLampID,
 
+    #[error("empty lamp id range")]
+    EmptyLampIDRange,
+
     #[error("device returned no lamps")]
     NoLamps,
 

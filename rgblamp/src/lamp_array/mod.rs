@@ -179,6 +179,11 @@ impl LampArray {
             return Err(Error::InvalidLampID);
         }
 
+        if lamp_ids.is_empty() {
+            error!("Lamp id range {lamp_ids:?} is empty");
+            return Err(Error::EmptyLampIDRange);
+        }
+
         self.reports.lamp_range_update.send(
             &mut self.file,
             LampRangeUpdateParams {
