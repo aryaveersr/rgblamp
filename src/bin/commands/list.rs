@@ -30,7 +30,7 @@ impl ListCommand {
 
     fn list_device(&self, device: &LampArray) {
         println!("Device {}:", device.id());
-        println!("  Number of lamps: {}", device.lamp_count());
+        println!("  Number of lamps: {}", device.lamps().len());
         println!(
             "  Minimum interval between updates: {:?}",
             device.min_update_interval()

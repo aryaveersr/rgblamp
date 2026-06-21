@@ -21,8 +21,8 @@ pub struct LampArray {
     id: usize,
     file: File,
     reports: Reports,
-    array_attrs: LampArrayAttrs,
-    lamp_attrs: Vec<LampAttrs>,
+    min_update_interval: Duration,
+    lamps: Vec<LampAttrs>,
 }
 
 impl LampArray {
@@ -61,7 +61,7 @@ impl LampArray {
 
     fn new(id: usize, mut file: File, reports: Reports) -> LampResult<Self> {
         let array_attrs = reports.lamp_array_attrs.get(&mut file)?;
-        let mut lamp_attrs = Vec::with_capacity(array_attrs.lamp_count as usize);
+        let mut lamps = Vec::with_capacity(array_attrs.lamp_count as usize);
 
         if array_attrs.lamp_count == 0 {
             return Err(Error::NoLamps);
@@ -76,15 +76,17 @@ impl LampArray {
                 return Err(Error::unsupported("non-programmable lamp"));
             }
 
-            lamp_attrs.push(attrs);
+            lamps.push(attrs);
         }
+
+        let min_update_interval = Duration::from_micros(array_attrs.min_update_interval_us as u64);
 
         Ok(Self {
             id,
             file,
             reports,
-            array_attrs,
-            lamp_attrs,
+            min_update_interval,
+            lamps,
         })
     }
 
@@ -92,16 +94,12 @@ impl LampArray {
         self.id
     }
 
-    pub fn lamp_count(&self) -> u32 {
-        self.array_attrs.lamp_count
-    }
-
     pub fn min_update_interval(&self) -> Duration {
-        Duration::from_micros(self.array_attrs.min_update_interval_us as u64)
+        self.min_update_interval
     }
 
     pub fn lamps(&self) -> &[LampAttrs] {
-        &self.lamp_attrs
+        &self.lamps
     }
 
     pub fn set_auto_mode(&mut self, auto_mode: bool) -> LampResult<()> {
@@ -111,7 +109,7 @@ impl LampArray {
     }
 
     pub fn set_lamp(&mut self, lamp_id: u32, color: Rgba8) -> LampResult<()> {
-        if lamp_id >= self.lamp_count() {
+        if lamp_id >= self.lamps.len() as u32 {
             return Err(Error::InvalidLampID);
         }
 
@@ -129,7 +127,7 @@ impl LampArray {
         self.reports.lamp_range_update.send(
             &mut self.file,
             LampRangeUpdateParams {
-                lamp_ids: 0..=(self.array_attrs.lamp_count - 1),
+                lamp_ids: 0..=(self.lamps.len() as u32 - 1),
                 update_flags: LampUpdateFlags::new(true),
                 color,
             },
@@ -142,7 +140,7 @@ impl LampArray {
         color: Rgba8,
         is_last: bool,
     ) -> LampResult<()> {
-        if *lamp_ids.end() >= self.lamp_count() {
+        if *lamp_ids.end() >= self.lamps.len() as u32 {
             return Err(Error::InvalidLampID);
         }
 
@@ -162,7 +160,7 @@ impl LampArray {
         is_last: bool,
     ) -> LampResult<()> {
         for item in items {
-            if item.lamp_id >= self.lamp_count() {
+            if item.lamp_id >= self.lamps.len() as u32 {
                 return Err(Error::InvalidLampID);
             }
         }
@@ -182,12 +180,6 @@ impl LampArray {
 
         Ok(())
     }
-}
-
-#[derive(Debug)]
-pub struct LampArrayAttrs {
-    pub lamp_count: u32,
-    pub min_update_interval_us: u32,
 }
 
 #[derive(Debug)]

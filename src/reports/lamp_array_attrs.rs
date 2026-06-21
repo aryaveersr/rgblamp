@@ -1,7 +1,6 @@
 use std::fs::File;
 
 use crate::{
-    LampArrayAttrs,
     error::LampResult,
     reports::{Report, ReportInfo},
     utils::{field::ReportField, io::get_feature, usage},
@@ -55,4 +54,10 @@ impl Report for LampArrayAttrsReport {
             .validate("MIN_UPDATE_INTERVAL_US")?;
         Ok(())
     }
+}
+
+#[derive(Debug)]
+pub struct LampArrayAttrs {
+    pub lamp_count: u32,
+    pub min_update_interval_us: u32,
 }
