@@ -6,6 +6,7 @@ use std::{
 };
 
 use color::Rgba8;
+use log::{error, trace};
 
 use crate::{
     error::{Error, LampResult},
@@ -27,6 +28,8 @@ pub struct LampArray {
 
 impl LampArray {
     pub fn enumerate() -> LampResult<Vec<Self>> {
+        trace!("Enumerating LampArray devices");
+
         let mut lamparrays = Vec::new();
         let mut entries: Vec<_> = fs::read_dir("/sys/class/hidraw")
             .unwrap()
@@ -44,6 +47,8 @@ impl LampArray {
             let device_path = PathBuf::from("/dev").join(entry.path().file_name().unwrap());
 
             for reports in parser {
+                trace!("Found a device at {device_path:?} (id {id_counter})");
+
                 let reports = reports?;
                 let file = OpenOptions::new()
                     .read(true)
@@ -60,32 +65,36 @@ impl LampArray {
     }
 
     fn new(id: usize, mut file: File, reports: Reports) -> LampResult<Self> {
-        let array_attrs = reports.lamp_array_attrs.get(&mut file)?;
-        let mut lamps = Vec::with_capacity(array_attrs.lamp_count as usize);
+        let attrs = reports.lamp_array_attrs.get(&mut file)?;
+        let mut lamps = Vec::with_capacity(attrs.lamp_count as usize);
 
-        if array_attrs.lamp_count == 0 {
+        trace!("Received LampArray attributes: {attrs:?}");
+
+        if attrs.lamp_count == 0 {
+            error!("Device id {id} has no lamps");
             return Err(Error::NoLamps);
         }
 
         reports.lamp_attrs_request.send(&mut file, 0)?;
-        for _ in 0..array_attrs.lamp_count {
+        for lamp_id in 0..attrs.lamp_count {
             let attrs = reports.lamp_attrs_response.get(&mut file)?;
+
+            trace!("Received Lamp attributes for lamp {lamp_id}: {attrs:?}");
 
             if !attrs.is_programmable {
                 // TODO
+                error!("Lamp {lamp_id} is not programmable");
                 return Err(Error::unsupported("non-programmable lamp"));
             }
 
             lamps.push(attrs);
         }
 
-        let min_update_interval = Duration::from_micros(array_attrs.min_update_interval_us as u64);
-
         Ok(Self {
             id,
             file,
             reports,
-            min_update_interval,
+            min_update_interval: Duration::from_micros(attrs.min_update_interval_us as u64),
             lamps,
         })
     }
@@ -103,13 +112,21 @@ impl LampArray {
     }
 
     pub fn set_auto_mode(&mut self, auto_mode: bool) -> LampResult<()> {
+        trace!("Setting auto mode to '{auto_mode}' for device {}", self.id);
+
         self.reports
             .lamp_array_control
             .send(&mut self.file, auto_mode)
     }
 
     pub fn set_lamp(&mut self, lamp_id: u32, color: Rgba8) -> LampResult<()> {
+        trace!(
+            "Setting lamp {lamp_id} to color '{color}' for device {}",
+            self.id
+        );
+
         if lamp_id >= self.lamps.len() as u32 {
+            error!("Lamp id {lamp_id} was invalid (out of range)");
             return Err(Error::InvalidLampID);
         }
 
@@ -124,6 +141,11 @@ impl LampArray {
     }
 
     pub fn set_all_lamps(&mut self, color: Rgba8) -> LampResult<()> {
+        trace!(
+            "Setting all lamps to color '{color}' for device {}",
+            self.id
+        );
+
         self.reports.lamp_range_update.send(
             &mut self.file,
             LampRangeUpdateParams {
@@ -140,7 +162,14 @@ impl LampArray {
         color: Rgba8,
         is_last: bool,
     ) -> LampResult<()> {
+        trace!(
+            "Setting all lamps in range {lamp_ids:?} to color '{color}' for device {}",
+            self.id
+        );
+        trace!("Is this is last in a batch: {is_last}");
+
         if *lamp_ids.end() >= self.lamps.len() as u32 {
+            error!("One or more lamp ids in range {lamp_ids:?} is invalid");
             return Err(Error::InvalidLampID);
         }
 
@@ -159,8 +188,13 @@ impl LampArray {
         items: &[LampUpdateItem],
         is_last: bool,
     ) -> LampResult<()> {
+        trace!("Setting multiple lamps for device {}", self.id);
+        trace!("{items:?}");
+        trace!("Is this is last in a batch: {is_last}");
+
         for item in items {
             if item.lamp_id >= self.lamps.len() as u32 {
+                error!("Lamp id {} was invalid (out of range)", item.lamp_id);
                 return Err(Error::InvalidLampID);
             }
         }
