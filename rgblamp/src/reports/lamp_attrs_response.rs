@@ -1,6 +1,7 @@
 use std::fs::File;
 
 use crate::{
+    error::LampResult,
     reports::{Report, ReportInfo},
     utils::{field::ReportField, io::get_feature, usage},
 };
@@ -27,10 +28,10 @@ impl LampAttrsResponseReport {
         }
     }
 
-    pub fn get(&self, file: &mut File) -> LampAttrs {
-        let bytes = &get_feature(file, &self.info)[1..];
+    pub fn get(&self, file: &mut File) -> LampResult<LampAttrs> {
+        let bytes = &get_feature(file, &self.info)?[1..];
 
-        LampAttrs {
+        Ok(LampAttrs {
             lamp_id: self.lamp_id.get(bytes),
             update_latency_us: self.update_latency_us.get(bytes),
             is_programmable: self.is_programmable.get(bytes),
@@ -39,7 +40,7 @@ impl LampAttrsResponseReport {
             green_level_count: self.green_level_count.get(bytes),
             blue_level_count: self.blue_level_count.get(bytes),
             intensity_level_count: self.intensity_level_count.get(bytes),
-        }
+        })
     }
 }
 

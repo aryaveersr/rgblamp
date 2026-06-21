@@ -1,6 +1,7 @@
 use std::fs::File;
 
 use crate::{
+    error::LampResult,
     reports::{Report, ReportInfo},
     utils::{field::ReportField, io::get_feature, usage},
 };
@@ -21,13 +22,13 @@ impl LampArrayAttrsReport {
         }
     }
 
-    pub fn get(&self, file: &mut File) -> LampArrayAttrs {
-        let bytes = &get_feature(file, &self.info)[1..];
+    pub fn get(&self, file: &mut File) -> LampResult<LampArrayAttrs> {
+        let bytes = &get_feature(file, &self.info)?[1..];
 
-        LampArrayAttrs {
+        Ok(LampArrayAttrs {
             lamp_count: self.lamp_count.get(bytes),
             min_update_interval_us: self.min_update_interval_us.get(bytes),
-        }
+        })
     }
 }
 

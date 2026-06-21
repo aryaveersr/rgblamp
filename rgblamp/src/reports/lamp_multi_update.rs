@@ -2,6 +2,7 @@ use std::fs::File;
 
 use crate::{
     LampUpdateItem,
+    error::LampResult,
     reports::{LampUpdateFlags, Report, ReportInfo},
     utils::{
         field::ReportField,
@@ -37,7 +38,7 @@ impl LampMultiUpdateReport {
         self.slots
     }
 
-    pub fn send(&self, file: &mut File, params: LampMultiUpdateParams) {
+    pub fn send(&self, file: &mut File, params: LampMultiUpdateParams) -> LampResult<()> {
         let LampMultiUpdateParams {
             update_flags,
             items,
@@ -75,7 +76,7 @@ impl LampMultiUpdateReport {
             intensity += color_size;
         }
 
-        set_feature(file, &mut buffer);
+        set_feature(file, &mut buffer)
     }
 }
 

@@ -3,6 +3,7 @@ use std::{fs::File, ops::RangeInclusive};
 use color::Rgba8;
 
 use crate::{
+    error::LampResult,
     reports::{LampUpdateFlags, Report, ReportInfo},
     utils::{
         field::ReportField,
@@ -33,7 +34,7 @@ impl LampRangeUpdateReport {
         }
     }
 
-    pub fn send(&self, file: &mut File, params: LampRangeUpdateParams) {
+    pub fn send(&self, file: &mut File, params: LampRangeUpdateParams) -> LampResult<()> {
         let LampRangeUpdateParams {
             lamp_ids,
             update_flags,
@@ -52,7 +53,7 @@ impl LampRangeUpdateReport {
         self.blue.set(bytes, color.b);
         self.intensity.set(bytes, color.a);
 
-        set_feature(file, &mut buffer);
+        set_feature(file, &mut buffer)
     }
 }
 

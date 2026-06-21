@@ -8,3 +8,4 @@ color.workspace = true
 
 bilge = "0.3.0"
 nix = { version = "0.31.3", features = ["ioctl"] }
+thiserror = "2.0.18"

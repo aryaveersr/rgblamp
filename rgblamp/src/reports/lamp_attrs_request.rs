@@ -1,6 +1,7 @@
 use std::fs::File;
 
 use crate::{
+    error::LampResult,
     reports::{Report, ReportInfo},
     utils::{
         field::ReportField,
@@ -39,10 +40,10 @@ impl LampAttrsRequestReport {
         }
     }
 
-    pub fn send(&self, file: &mut File, lamp_id: u32) {
+    pub fn send(&self, file: &mut File, lamp_id: u32) -> LampResult<()> {
         let mut buffer = prep_feature(&self.info);
         let bytes = &mut buffer[1..];
         self.lamp_id.set(bytes, lamp_id);
-        set_feature(file, &mut buffer);
+        set_feature(file, &mut buffer)
     }
 }

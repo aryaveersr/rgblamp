@@ -1,6 +1,7 @@
 use std::fs::File;
 
 use crate::{
+    error::LampResult,
     reports::{Report, ReportInfo},
     utils::{
         field::ReportField,
@@ -38,10 +39,10 @@ impl LampArrayControlReport {
         }
     }
 
-    pub fn send(&self, file: &mut File, auto_mode: bool) {
+    pub fn send(&self, file: &mut File, auto_mode: bool) -> LampResult<()> {
         let mut buffer = prep_feature(&self.info);
         let bytes = &mut buffer[1..];
         self.auto_mode.set(bytes, auto_mode);
-        set_feature(file, &mut buffer);
+        set_feature(file, &mut buffer)
     }
 }

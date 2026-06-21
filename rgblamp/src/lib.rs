@@ -8,12 +8,15 @@ use std::{
 use color::Rgba8;
 
 use crate::{
+    error::LampResult,
     parser::parse_report_descriptor,
     reports::{
         LampUpdateFlags, Reports, lamp_array_attrs::LampArrayAttrs, lamp_attrs_response::LampAttrs,
         lamp_multi_update::LampMultiUpdateParams, lamp_range_update::LampRangeUpdateParams,
     },
 };
+
+pub mod error;
 
 mod parser;
 mod reports;
@@ -28,7 +31,7 @@ pub struct LampArray {
 }
 
 impl LampArray {
-    pub fn enumerate() -> Vec<Self> {
+    pub fn enumerate() -> LampResult<Vec<Self>> {
         let mut lamparrays = Vec::new();
         let mut entries: Vec<_> = fs::read_dir("/sys/class/hidraw")
             .unwrap()
@@ -49,22 +52,22 @@ impl LampArray {
                     .open(device_path)
                     .unwrap();
 
-                lamparrays.push(Self::new(file, reports));
+                lamparrays.push(Self::new(file, reports)?);
             }
         }
 
-        lamparrays
+        Ok(lamparrays)
     }
 
-    fn new(mut file: File, reports: Reports) -> Self {
-        let array_attrs = reports.lamp_array_attrs.get(&mut file);
+    fn new(mut file: File, reports: Reports) -> LampResult<Self> {
+        let array_attrs = reports.lamp_array_attrs.get(&mut file)?;
         let mut lamp_attrs = Vec::with_capacity(array_attrs.lamp_count as usize);
 
         assert!(array_attrs.lamp_count > 0);
 
-        reports.lamp_attrs_request.send(&mut file, 0);
+        reports.lamp_attrs_request.send(&mut file, 0)?;
         for _ in 0..array_attrs.lamp_count {
-            let attrs = reports.lamp_attrs_response.get(&mut file);
+            let attrs = reports.lamp_attrs_response.get(&mut file)?;
 
             assert!(
                 attrs.is_programmable,
@@ -74,12 +77,12 @@ impl LampArray {
             lamp_attrs.push(attrs);
         }
 
-        Self {
+        Ok(Self {
             file,
             reports,
             array_attrs,
             lamp_attrs,
-        }
+        })
     }
 
     pub fn lamp_count(&self) -> u32 {
@@ -94,13 +97,13 @@ impl LampArray {
         &self.lamp_attrs
     }
 
-    pub fn set_auto_mode(&mut self, auto_mode: bool) {
+    pub fn set_auto_mode(&mut self, auto_mode: bool) -> LampResult<()> {
         self.reports
             .lamp_array_control
-            .send(&mut self.file, auto_mode);
+            .send(&mut self.file, auto_mode)
     }
 
-    pub fn set_lamp(&mut self, lamp_id: u32, color: Rgba8) {
+    pub fn set_lamp(&mut self, lamp_id: u32, color: Rgba8) -> LampResult<()> {
         self.reports.lamp_range_update.send(
             &mut self.file,
             LampRangeUpdateParams {
@@ -108,10 +111,10 @@ impl LampArray {
                 update_flags: LampUpdateFlags::new(true),
                 color,
             },
-        );
+        )
     }
 
-    pub fn set_all_lamps(&mut self, color: Rgba8) {
+    pub fn set_all_lamps(&mut self, color: Rgba8) -> LampResult<()> {
         self.reports.lamp_range_update.send(
             &mut self.file,
             LampRangeUpdateParams {
@@ -119,10 +122,15 @@ impl LampArray {
                 update_flags: LampUpdateFlags::new(true),
                 color,
             },
-        );
+        )
     }
 
-    pub fn set_lamps_range(&mut self, lamp_ids: RangeInclusive<u32>, color: Rgba8, is_last: bool) {
+    pub fn set_lamps_range(
+        &mut self,
+        lamp_ids: RangeInclusive<u32>,
+        color: Rgba8,
+        is_last: bool,
+    ) -> LampResult<()> {
         self.reports.lamp_range_update.send(
             &mut self.file,
             LampRangeUpdateParams {
@@ -130,10 +138,14 @@ impl LampArray {
                 color,
                 update_flags: LampUpdateFlags::new(is_last),
             },
-        );
+        )
     }
 
-    pub fn set_multiple_lamps(&mut self, items: &[LampUpdateItem], is_last: bool) {
+    pub fn set_multiple_lamps(
+        &mut self,
+        items: &[LampUpdateItem],
+        is_last: bool,
+    ) -> LampResult<()> {
         let slots = self.reports.lamp_multi_update.slots() as usize;
         let last_idx = items.len().div_ceil(slots);
 
@@ -144,8 +156,10 @@ impl LampArray {
                     update_flags: LampUpdateFlags::new(is_last && last_idx == idx),
                     items: chunk,
                 },
-            );
+            )?;
         }
+
+        Ok(())
     }
 }
 
