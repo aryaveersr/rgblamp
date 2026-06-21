@@ -437,18 +437,27 @@ checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 name = "rgblamp"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "bilge",
- "clap",
- "clap-verbosity-flag",
  "color",
  "enum_dispatch",
- "env_logger",
  "log",
  "nix",
  "serde",
- "serde_json",
  "thiserror",
+]
+
+[[package]]
+name = "rgblamp_cli"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "clap-verbosity-flag",
+ "color",
+ "env_logger",
+ "log",
+ "rgblamp",
+ "serde_json",
 ]
 
 [[package]]

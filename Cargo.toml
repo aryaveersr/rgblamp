@@ -1,22 +1,8 @@
-[package]
-name = "rgblamp"
-version = "0.1.0"
-edition = "2024"
+[workspace]
+resolver = "3"
+members = ["rgblamp_cli/", "rgblamp/"]
+default-members = ["rgblamp_cli/", "rgblamp/"]
 
-[[bin]]
-name = "rgblamp"
-path = "src/bin/main.rs"
-
-[dependencies]
-anyhow = "1.0.102"
-bilge = "0.3.0"
-clap = { version = "4.6.1", features = ["derive"] }
-clap-verbosity-flag = "3.0.4"
+[workspace.dependencies]
 color = "0.3.3"
-enum_dispatch = "0.3.13"
-env_logger = "0.11.10"
 log = "0.4.33"
-nix = { version = "0.31.3", features = ["ioctl"] }
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.150"
-thiserror = "2.0.18"

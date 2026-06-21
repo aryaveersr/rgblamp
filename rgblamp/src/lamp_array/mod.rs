@@ -11,10 +11,9 @@ use serde::Serialize;
 
 use crate::{
     error::{Error, LampResult},
-    parser::ReportDescriptorParser,
     reports::{
         LampUpdateFlags, Reports, lamp_multi_update::LampMultiUpdateParams,
-        lamp_range_update::LampRangeUpdateParams,
+        lamp_range_update::LampRangeUpdateParams, parser::ReportDescriptorParser,
     },
 };
 
