@@ -1,6 +1,7 @@
 use std::fs::File;
 
 use crate::{
+    LampAttrs,
     error::LampResult,
     reports::{Report, ReportInfo},
     utils::{field::ReportField, io::get_feature, usage},
@@ -76,16 +77,4 @@ impl Report for LampAttrsResponseReport {
             .validate("INTENSITY_LEVEL_COUNT")?;
         Ok(())
     }
-}
-
-#[derive(Debug)]
-pub struct LampAttrs {
-    pub lamp_id: u32,
-    pub update_latency_us: u32,
-    pub is_programmable: bool,
-
-    pub red_level_count: u32,
-    pub green_level_count: u32,
-    pub blue_level_count: u32,
-    pub intensity_level_count: u32,
 }

@@ -5,14 +5,14 @@ use rgblamp::LampArray;
 
 #[derive(Args, Debug)]
 pub struct SetCommand {
-    /// Color as any value supported by CSS. (Hex, RGB, named values, etc.)
+    /// Color as any value supported by CSS (hex, rgb(), named values, etc.)
     color: String,
 
-    /// Device ID. Required for Lamp ID if there are multiple devices.
+    /// Limit the change to a specific device
     #[arg(short, long = "device")]
     device_id: Option<usize>,
 
-    /// Lamp ID.
+    /// Set the color of a specific lamp. Requires device id if there are multiple devices
     #[arg(short, long = "lamp")]
     lamp_id: Option<u32>,
 }

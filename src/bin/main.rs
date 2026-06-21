@@ -17,5 +17,6 @@ fn main() -> anyhow::Result<()> {
 
     match args.command {
         Commands::Set(set_command) => set_command.exec(),
+        Commands::List(list_command) => list_command.exec(),
     }
 }

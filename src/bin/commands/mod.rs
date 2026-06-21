@@ -1,11 +1,15 @@
 use clap::Subcommand;
 
-use crate::commands::set::SetCommand;
+use crate::commands::{list::ListCommand, set::SetCommand};
 
+pub mod list;
 pub mod set;
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-    /// Set all lamps, or a particular device/lamp to a specific color.
+    /// Set lamp(s) to a specific color
     Set(SetCommand),
+
+    /// List all detectable lamp(s) and their properties
+    List(ListCommand),
 }
