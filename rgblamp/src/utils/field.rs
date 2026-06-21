@@ -40,14 +40,21 @@ where
     <T as TryFrom<u32>>::Error: Debug,
 {
     pub fn set(&mut self, (offset_bits, size_bits): (u32, u32)) -> LampResult<()> {
-        assert_eq!(offset_bits % 8, 0);
-        assert_eq!(size_bits % 8, 0);
+        if !offset_bits.is_multiple_of(8) || !size_bits.is_multiple_of(8) {
+            // TODO
+            return Err(Error::unsupported("only byte aligned fields are supported"));
+        }
 
         let offset = offset_bits as usize / 8;
         let size = size_bits as usize / 8;
 
-        assert!(size <= std::mem::size_of::<T>());
-        assert!(self.inner.is_none());
+        if size > std::mem::size_of::<T>() {
+            return Err(Error::parser("size of field is too large to store"));
+        }
+
+        if self.inner.is_some() {
+            return Err(Error::parser("field was already defined"));
+        }
 
         self.inner = Some(ReportFieldInner { offset, size });
         Ok(())

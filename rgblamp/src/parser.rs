@@ -66,7 +66,7 @@ impl<'a> ReportDescriptorParser<'a> {
                         return Ok(Some(report));
                     }
                 }
-                ItemKind::Reserved => panic!("reserved"),
+                ItemKind::Reserved => return Err(Error::parser("reserved item kind")),
             }
         }
 
@@ -74,7 +74,9 @@ impl<'a> ReportDescriptorParser<'a> {
     }
 
     fn handle_global_item(&mut self, kind: u4, data: u32) -> LampResult<()> {
-        let kind = GlobalItemKind::try_from(kind).unwrap();
+        let kind = GlobalItemKind::try_from(kind)
+            .map_err(|_| Error::parser(format!("unknown global item: {kind}")))?;
+
         match kind {
             GlobalItemKind::UsagePage => self.globals.usage_page = Some(data as u16),
             GlobalItemKind::LogicalMin => self.globals.logical_min = Some(data as i32),
@@ -83,7 +85,11 @@ impl<'a> ReportDescriptorParser<'a> {
             GlobalItemKind::ReportSize => self.globals.report_size = Some(data),
             GlobalItemKind::ReportCount => self.globals.report_count = Some(data),
             GlobalItemKind::Push => self.global_stack.push(self.globals.clone()),
-            GlobalItemKind::Pop => self.globals = self.global_stack.pop().unwrap(),
+            GlobalItemKind::Pop => {
+                self.globals = self.global_stack.pop().ok_or(Error::parser(
+                    "pop encountered when global state stack is empty",
+                ))?
+            }
             _ => (),
         }
 
@@ -91,29 +97,26 @@ impl<'a> ReportDescriptorParser<'a> {
     }
 
     fn handle_local_item(&mut self, kind: u4, data: u32) -> LampResult<()> {
-        let kind = LocalItemKind::try_from(kind).unwrap();
+        let kind = LocalItemKind::try_from(kind)
+            .map_err(|_| Error::parser(format!("unknown local item: {kind}")))?;
+
+        if matches!(
+            kind,
+            LocalItemKind::Usage | LocalItemKind::UsageMin | LocalItemKind::UsageMax
+        ) && data > u16::MAX as u32
+        {
+            return Err(Error::unsupported("full-sized usages"));
+        }
+
         match kind {
-            LocalItemKind::Usage => {
-                if data > u16::MAX as u32 {
-                    return Err(Error::unsupported("full-sized usages"));
-                }
-
-                self.usages.push(data as u16);
-            }
-            LocalItemKind::UsageMin => {
-                if data > u16::MAX as u32 {
-                    return Err(Error::unsupported("full-sized usages"));
-                }
-
-                self.usage_range_min = Some(data as u16);
-            }
+            LocalItemKind::Usage => self.usages.push(data as u16),
+            LocalItemKind::UsageMin => self.usage_range_min = Some(data as u16),
             LocalItemKind::UsageMax => {
-                if data > u16::MAX as u32 {
-                    return Err(Error::unsupported("full-sized usages"));
-                }
-
-                let min = self.usage_range_min.take().unwrap();
                 let max = data as u16;
+                let min = self.usage_range_min.take().ok_or(Error::parser(
+                    "usage max encountered without a corresponding usage min",
+                ))?;
+
                 self.usages.extend(min..=max);
             }
             _ => (),
@@ -123,7 +126,9 @@ impl<'a> ReportDescriptorParser<'a> {
     }
 
     fn handle_main_item(&mut self, kind: u4) -> LampResult<Option<Reports>> {
-        let kind = MainItemKind::try_from(kind).unwrap();
+        let kind = MainItemKind::try_from(kind)
+            .map_err(|_| Error::parser(format!("unknown main item: {kind}")))?;
+
         match kind {
             MainItemKind::Collection => self.start_collection()?,
             MainItemKind::EndCollection => return self.end_collection(),
@@ -137,8 +142,15 @@ impl<'a> ReportDescriptorParser<'a> {
 
     fn handle_data_item(&mut self, kind: DataKind) -> LampResult<()> {
         if let Some(report_kind) = self.report_kind {
-            let size = self.globals.report_size.unwrap();
-            let count = self.globals.report_count.unwrap() as usize;
+            let size = self
+                .globals
+                .report_size
+                .ok_or(Error::parser("data item without size"))?;
+
+            let count = self
+                .globals
+                .report_count
+                .ok_or(Error::parser("data item without ount"))? as usize;
 
             if kind == DataKind::Input {
                 return Err(Error::parser("input data item found in lamparray page"));
@@ -183,7 +195,10 @@ impl<'a> ReportDescriptorParser<'a> {
         }
 
         let id = self.globals.report_id;
-        let usage = self.usages.pop().unwrap();
+        let usage = self
+            .usages
+            .pop()
+            .ok_or(Error::parser("no usage found for collection"))?;
 
         match usage {
             usage::LAMP_ARRAY => self.root_depth = Some(self.collection_depth),
