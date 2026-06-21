@@ -81,6 +81,6 @@ impl ListCommand {
             "    Supported intensity levels: {}",
             lamp.intensity_level_count
         );
-        println!("    Is Programmable: {}", lamp.is_programmable);
+        println!("    Is Programmable: {}", lamp.programmable);
     }
 }
