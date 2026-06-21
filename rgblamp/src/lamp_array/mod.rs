@@ -7,7 +7,6 @@ use std::{
 
 use color::Rgba8;
 use log::{error, trace};
-use serde::Serialize;
 
 use crate::{
     error::{Error, LampResult},
@@ -223,7 +222,8 @@ impl LampArray {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LampAttrs {
     pub lamp_id: u32,
     pub update_latency: Duration,

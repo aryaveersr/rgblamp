@@ -175,6 +175,9 @@ name = "color"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2ec7c5eb7a16992b1904d76c517d170ab353b0e0b3d5a0c81a8a0cd1037893cf"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "colorchoice"
