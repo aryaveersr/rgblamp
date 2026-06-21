@@ -9,6 +9,7 @@
 use std::fmt::Debug;
 
 use bilge::prelude::*;
+use enum_dispatch::enum_dispatch;
 
 use crate::{
     error::LampResult,
@@ -27,9 +28,20 @@ pub mod lamp_attrs_response;
 pub mod lamp_multi_update;
 pub mod lamp_range_update;
 
+#[enum_dispatch]
 pub trait Report {
     fn register(&mut self, usages: &[u16], size: u32) -> LampResult<()>;
     fn validate(&self) -> LampResult<()>;
+}
+
+#[enum_dispatch(Report)]
+pub enum ReportKind {
+    ArrayAttrs(LampArrayAttrsReport),
+    AttrsRequest(LampAttrsRequestReport),
+    AttrsResponse(LampAttrsResponseReport),
+    MultiUpdate(LampMultiUpdateReport),
+    RangeUpdate(LampRangeUpdateReport),
+    ArrayControl(LampArrayControlReport),
 }
 
 #[derive(Debug)]

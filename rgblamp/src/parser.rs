@@ -1,12 +1,11 @@
 //! The Report Descriptor format is covered in Section 6 of HID Spec.
 
 use bilge::prelude::*;
-use enum_iterator::{Sequence, all};
 
 use crate::{
     error::{Error, LampResult},
     reports::{
-        Report, Reports, lamp_array_attrs::LampArrayAttrsReport,
+        Report, ReportKind, Reports, lamp_array_attrs::LampArrayAttrsReport,
         lamp_array_control::LampArrayControlReport, lamp_attrs_request::LampAttrsRequestReport,
         lamp_attrs_response::LampAttrsResponseReport, lamp_multi_update::LampMultiUpdateReport,
         lamp_range_update::LampRangeUpdateReport,
@@ -30,7 +29,7 @@ pub struct ReportDescriptorParser<'a> {
     //
     // Root depth decides whether we're in a collection of a LampArray or not.
     root_depth: Option<usize>,
-    report_kind: Option<ReportKind>,
+    active_report: Option<(ReportKind, usize)>,
     // Reports.
     lamp_array_attrs_report: Option<LampArrayAttrsReport>,
     lamp_attrs_request_report: Option<LampAttrsRequestReport>,
@@ -141,7 +140,7 @@ impl<'a> ReportDescriptorParser<'a> {
     }
 
     fn handle_data_item(&mut self, kind: DataKind) -> LampResult<()> {
-        if let Some(report_kind) = self.report_kind {
+        if let Some((report, _)) = &mut self.active_report {
             let size = self
                 .globals
                 .report_size
@@ -179,7 +178,7 @@ impl<'a> ReportDescriptorParser<'a> {
                 usages.resize(count, last_usage);
             }
 
-            self.get_report(report_kind).register(&usages, size)?;
+            report.register(&usages, size)?;
             self.usages = usages;
         }
 
@@ -203,30 +202,24 @@ impl<'a> ReportDescriptorParser<'a> {
         match usage {
             usage::LAMP_ARRAY => self.root_depth = Some(self.collection_depth),
             usage::LAMP_ARRAY_ATTRIBUTES_REPORT => {
-                self.lamp_array_attrs_report = Some(LampArrayAttrsReport::new(id));
-                self.report_kind = Some(ReportKind::ArrayAttrs);
+                self.activate_report(LampArrayAttrsReport::new(id))?;
             }
             usage::LAMP_ATTRIBUTES_REQUEST_REPORT => {
-                self.lamp_attrs_request_report = Some(LampAttrsRequestReport::new(id));
-                self.report_kind = Some(ReportKind::AttrsRequest);
+                self.activate_report(LampAttrsRequestReport::new(id))?;
             }
             usage::LAMP_ATTRIBUTES_RESPONSE_REPORT => {
-                self.lamp_attrs_response_report = Some(LampAttrsResponseReport::new(id));
-                self.report_kind = Some(ReportKind::AttrsResponse);
+                self.activate_report(LampAttrsResponseReport::new(id))?;
             }
             usage::LAMP_MULTI_UPDATE_REPORT => {
-                self.lamp_multi_update_report = Some(LampMultiUpdateReport::new(id));
-                self.report_kind = Some(ReportKind::MultiUpdate);
+                self.activate_report(LampMultiUpdateReport::new(id))?;
             }
             usage::LAMP_RANGE_UPDATE_REPORT => {
-                self.lamp_range_update_report = Some(LampRangeUpdateReport::new(id));
-                self.report_kind = Some(ReportKind::RangeUpdate);
+                self.activate_report(LampRangeUpdateReport::new(id))?;
             }
             usage::LAMP_ARRAY_CONTROL_REPORT => {
-                self.lamp_array_control_report = Some(LampArrayControlReport::new(id));
-                self.report_kind = Some(ReportKind::ArrayControlReport)
+                self.activate_report(LampArrayControlReport::new(id))?;
             }
-            _ => self.report_kind = None,
+            _ => (),
         }
 
         Ok(())
@@ -240,13 +233,16 @@ impl<'a> ReportDescriptorParser<'a> {
         self.collection_depth -= 1;
         self.usages.clear();
 
+        if let Some((_, depth)) = self.active_report
+            && depth == self.collection_depth + 1
+        {
+            self.deactivate_report()?;
+            return Ok(None);
+        }
+
         Ok(match self.root_depth {
             Some(depth) if depth == self.collection_depth + 1 => {
                 self.root_depth = None;
-
-                for kind in all::<ReportKind>() {
-                    self.get_report(kind).validate()?;
-                }
 
                 Some(Reports {
                     lamp_array_attrs: self.lamp_array_attrs_report.take().unwrap(),
@@ -287,15 +283,29 @@ impl<'a> ReportDescriptorParser<'a> {
         Ok(Some((tag, u32::from_le_bytes(buffer))))
     }
 
-    fn get_report(&mut self, kind: ReportKind) -> &mut dyn Report {
-        match kind {
-            ReportKind::ArrayAttrs => self.lamp_array_attrs_report.as_mut().unwrap(),
-            ReportKind::MultiUpdate => self.lamp_multi_update_report.as_mut().unwrap(),
-            ReportKind::RangeUpdate => self.lamp_range_update_report.as_mut().unwrap(),
-            ReportKind::ArrayControlReport => self.lamp_array_control_report.as_mut().unwrap(),
-            ReportKind::AttrsRequest => self.lamp_attrs_request_report.as_mut().unwrap(),
-            ReportKind::AttrsResponse => self.lamp_attrs_response_report.as_mut().unwrap(),
+    fn activate_report(&mut self, report: impl Into<ReportKind>) -> LampResult<()> {
+        if self.active_report.is_some() {
+            return Err(Error::parser("cannot start another report inside a report"));
         }
+
+        self.active_report = Some((report.into(), self.collection_depth));
+        Ok(())
+    }
+
+    fn deactivate_report(&mut self) -> LampResult<()> {
+        let (report, _) = self.active_report.take().unwrap();
+        report.validate()?;
+
+        match report {
+            ReportKind::ArrayAttrs(report) => self.lamp_array_attrs_report = Some(report),
+            ReportKind::AttrsRequest(report) => self.lamp_attrs_request_report = Some(report),
+            ReportKind::AttrsResponse(report) => self.lamp_attrs_response_report = Some(report),
+            ReportKind::MultiUpdate(report) => self.lamp_multi_update_report = Some(report),
+            ReportKind::RangeUpdate(report) => self.lamp_range_update_report = Some(report),
+            ReportKind::ArrayControl(report) => self.lamp_array_control_report = Some(report),
+        }
+
+        Ok(())
     }
 }
 
@@ -318,16 +328,6 @@ enum DataKind {
     Input,
     Output,
     Feature,
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Sequence)]
-enum ReportKind {
-    ArrayAttrs,
-    AttrsRequest,
-    AttrsResponse,
-    MultiUpdate,
-    RangeUpdate,
-    ArrayControlReport,
 }
 
 // Section 6.2.2.2 of HID Spec.
