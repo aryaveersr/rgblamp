@@ -82,7 +82,7 @@ impl LampArray {
 
             trace!("Received Lamp attributes for lamp {lamp_id}: {attrs:?}");
 
-            if !attrs.is_programmable {
+            if !attrs.programmable {
                 // TODO
                 error!("Lamp {lamp_id} is not programmable");
                 return Err(Error::unsupported("non-programmable lamp"));

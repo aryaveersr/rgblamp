@@ -35,7 +35,7 @@ impl LampAttrsResponseReport {
         Ok(LampAttrs {
             lamp_id: self.lamp_id.extract(bytes),
             update_latency: Duration::from_micros(self.update_latency_us.extract(bytes) as u64),
-            is_programmable: self.is_programmable.extract(bytes),
+            programmable: self.is_programmable.extract(bytes),
 
             red_level_count: self.red_level_count.extract(bytes),
             green_level_count: self.green_level_count.extract(bytes),
