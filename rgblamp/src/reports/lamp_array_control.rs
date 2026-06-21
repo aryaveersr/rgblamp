@@ -17,10 +17,6 @@ pub struct LampArrayControlReport {
 }
 
 impl Report for LampArrayControlReport {
-    fn info(&self) -> &ReportInfo {
-        &self.info
-    }
-
     fn register(&mut self, usages: &[u16], size: u32) -> LampResult<()> {
         for usage in usages {
             let args = self.info.increment(size);
@@ -29,6 +25,13 @@ impl Report for LampArrayControlReport {
             }
         }
 
+        Ok(())
+    }
+
+    fn validate(&self) -> LampResult<()> {
+        self.info.validate()?;
+
+        self.auto_mode.validate("AUTONOMOUS_MODE")?;
         Ok(())
     }
 }

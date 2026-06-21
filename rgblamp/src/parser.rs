@@ -230,9 +230,7 @@ impl<'a> ReportDescriptorParser<'a> {
                 self.root_depth = None;
 
                 for kind in all::<ReportKind>() {
-                    if self.get_report(kind).info().size % 8 != 0 {
-                        return Err(Error::parser("report size is not byte-aligned"));
-                    }
+                    self.get_report(kind).validate()?;
                 }
 
                 Some(Reports {

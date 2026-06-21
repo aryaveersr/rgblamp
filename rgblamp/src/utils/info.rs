@@ -1,3 +1,5 @@
+use crate::error::{Error, LampResult};
+
 #[derive(Debug, Default)]
 pub struct ReportInfo {
     pub id: u8,
@@ -17,5 +19,13 @@ impl ReportInfo {
         let args = (self.size, size);
         self.size += size;
         args
+    }
+
+    pub fn validate(&self) -> LampResult<()> {
+        if self.size % 8 == 0 {
+            Ok(())
+        } else {
+            Err(Error::parser("report size is not byte-aligned"))
+        }
     }
 }

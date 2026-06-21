@@ -1,6 +1,6 @@
 use std::{fmt::Debug, marker::PhantomData, ops::AddAssign};
 
-use crate::error::LampResult;
+use crate::error::{Error, LampResult};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct ReportFieldInner {
@@ -61,12 +61,15 @@ where
         Ok(())
     }
 
-    pub fn is_some(&self) -> bool {
-        self.inner.is_some()
-    }
-
     pub fn size(&self) -> usize {
         self.inner.unwrap().size
+    }
+
+    pub fn validate(&self, usage: &'static str) -> LampResult<()> {
+        match self.inner {
+            Some(_) => Ok(()),
+            None => Err(Error::parser(format!("missing usage for {usage}"))),
+        }
     }
 
     pub fn extract(&self, bytes: &[u8]) -> T {

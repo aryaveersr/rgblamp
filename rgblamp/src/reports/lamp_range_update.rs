@@ -58,10 +58,6 @@ impl LampRangeUpdateReport {
 }
 
 impl Report for LampRangeUpdateReport {
-    fn info(&self) -> &ReportInfo {
-        &self.info
-    }
-
     fn register(&mut self, usages: &[u16], size: u32) -> LampResult<()> {
         for usage in usages {
             let args = self.info.increment(size);
@@ -77,6 +73,19 @@ impl Report for LampRangeUpdateReport {
             }
         }
 
+        Ok(())
+    }
+
+    fn validate(&self) -> LampResult<()> {
+        self.info.validate()?;
+
+        self.lamp_id_start.validate("LAMP_ID_START")?;
+        self.lamp_id_end.validate("LAMP_ID_END")?;
+        self.update_flags.validate("LAMP_UPDATE_FLAGS")?;
+        self.red.validate("RED_UPDATE_CHANNEL")?;
+        self.green.validate("GREEN_UPDATE_CHANNEL")?;
+        self.blue.validate("BLUE_UPDATE_CHANNEL")?;
+        self.intensity.validate("INTENSITY_UPDATE_CHANNEL")?;
         Ok(())
     }
 }

@@ -28,8 +28,8 @@ pub mod lamp_multi_update;
 pub mod lamp_range_update;
 
 pub trait Report {
-    fn info(&self) -> &ReportInfo;
     fn register(&mut self, usages: &[u16], size: u32) -> LampResult<()>;
+    fn validate(&self) -> LampResult<()>;
 }
 
 #[derive(Debug)]

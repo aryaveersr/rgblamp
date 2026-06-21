@@ -18,10 +18,6 @@ pub struct LampAttrsRequestReport {
 }
 
 impl Report for LampAttrsRequestReport {
-    fn info(&self) -> &ReportInfo {
-        &self.info
-    }
-
     fn register(&mut self, usages: &[u16], size: u32) -> LampResult<()> {
         for usage in usages {
             let args = self.info.increment(size);
@@ -30,6 +26,13 @@ impl Report for LampAttrsRequestReport {
             }
         }
 
+        Ok(())
+    }
+
+    fn validate(&self) -> LampResult<()> {
+        self.info.validate()?;
+
+        self.lamp_id.validate("LAMP_ID")?;
         Ok(())
     }
 }

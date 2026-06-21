@@ -33,10 +33,6 @@ impl LampArrayAttrsReport {
 }
 
 impl Report for LampArrayAttrsReport {
-    fn info(&self) -> &ReportInfo {
-        &self.info
-    }
-
     fn register(&mut self, usages: &[u16], size: u32) -> LampResult<()> {
         for usage in usages {
             let args = self.info.increment(size);
@@ -47,6 +43,15 @@ impl Report for LampArrayAttrsReport {
             }
         }
 
+        Ok(())
+    }
+
+    fn validate(&self) -> LampResult<()> {
+        self.info.validate()?;
+
+        self.lamp_count.validate("LAMP_COUNT")?;
+        self.min_update_interval_us
+            .validate("MIN_UPDATE_INTERVAL_US")?;
         Ok(())
     }
 }
