@@ -22,13 +22,15 @@ impl Report for LampAttrsRequestReport {
         &self.info
     }
 
-    fn register(&mut self, usages: &[u16], size: u32) {
+    fn register(&mut self, usages: &[u16], size: u32) -> LampResult<()> {
         for usage in usages {
-            let field = self.info.create_field(size);
+            let args = self.info.increment(size);
             if *usage == usage::LAMP_ID {
-                self.lamp_id = field;
+                self.lamp_id.set(args)?;
             }
         }
+
+        Ok(())
     }
 }
 
@@ -43,7 +45,9 @@ impl LampAttrsRequestReport {
     pub fn send(&self, file: &mut File, lamp_id: u32) -> LampResult<()> {
         let mut buffer = prep_feature(&self.info);
         let bytes = &mut buffer[1..];
-        self.lamp_id.set(bytes, lamp_id);
+
+        self.lamp_id.write(bytes, lamp_id);
+
         set_feature(file, &mut buffer)
     }
 }

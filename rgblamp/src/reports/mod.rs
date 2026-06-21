@@ -11,6 +11,7 @@ use std::fmt::Debug;
 use bilge::prelude::*;
 
 use crate::{
+    error::LampResult,
     reports::{
         lamp_array_attrs::LampArrayAttrsReport, lamp_array_control::LampArrayControlReport,
         lamp_attrs_request::LampAttrsRequestReport, lamp_attrs_response::LampAttrsResponseReport,
@@ -28,7 +29,7 @@ pub mod lamp_range_update;
 
 pub trait Report {
     fn info(&self) -> &ReportInfo;
-    fn register(&mut self, usages: &[u16], size: u32);
+    fn register(&mut self, usages: &[u16], size: u32) -> LampResult<()>;
 }
 
 #[derive(Debug)]

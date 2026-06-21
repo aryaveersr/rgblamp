@@ -1,5 +1,3 @@
-use crate::utils::field::ReportField;
-
 #[derive(Debug, Default)]
 pub struct ReportInfo {
     pub id: u8,
@@ -15,9 +13,9 @@ impl ReportInfo {
         self.size as usize / 8
     }
 
-    pub fn create_field(&mut self, size: u32) -> ReportField {
-        let field = ReportField::new(self.size, size);
+    pub fn increment(&mut self, size: u32) -> (u32, u32) {
+        let args = (self.size, size);
         self.size += size;
-        field
+        args
     }
 }

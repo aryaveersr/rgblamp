@@ -49,8 +49,8 @@ impl LampMultiUpdateReport {
         let mut buffer = prep_feature(&self.info);
         let bytes = &mut buffer[1..];
 
-        self.lamp_count.set(bytes, items.len() as u32);
-        self.update_flags.set(bytes, update_flags);
+        self.lamp_count.write(bytes, items.len() as u32);
+        self.update_flags.write(bytes, update_flags);
 
         let mut lamp_id = self.lamp_id;
 
@@ -59,16 +59,16 @@ impl LampMultiUpdateReport {
         let mut blue = self.blue;
         let mut intensity = self.intensity;
 
-        let color_size = red.size * 4;
+        let color_size = red.size() * 4;
 
         for item in items {
-            lamp_id.set(bytes, item.lamp_id);
-            lamp_id += lamp_id.size;
+            lamp_id.write(bytes, item.lamp_id);
+            lamp_id += lamp_id.size();
 
-            red.set(bytes, item.color.r);
-            green.set(bytes, item.color.g);
-            blue.set(bytes, item.color.b);
-            intensity.set(bytes, item.color.a);
+            red.write(bytes, item.color.r);
+            green.write(bytes, item.color.g);
+            blue.write(bytes, item.color.b);
+            intensity.write(bytes, item.color.a);
 
             red += color_size;
             green += color_size;
@@ -85,33 +85,26 @@ impl Report for LampMultiUpdateReport {
         &self.info
     }
 
-    fn register(&mut self, usages: &[u16], size: u32) {
+    fn register(&mut self, usages: &[u16], size: u32) -> LampResult<()> {
         for usage in usages {
-            let field = self.info.create_field(size);
+            let args = self.info.increment(size);
             match *usage {
-                usage::LAMP_COUNT => self.lamp_count = field,
-                usage::LAMP_UPDATE_FLAGS => self.update_flags = field.cast_as(),
+                usage::LAMP_COUNT => self.lamp_count.set(args)?,
+                usage::LAMP_UPDATE_FLAGS => self.update_flags.set(args)?,
                 usage::LAMP_ID => {
                     self.slots += 1;
-                    if self.slots == 1 {
-                        self.lamp_id = field.cast_as();
-                    }
+                    self.lamp_id.set_if_none(args)?;
                 }
-                usage::RED_UPDATE_CHANNEL if self.red.is_uninit() => {
-                    self.red = field.cast_as();
-                }
-                usage::GREEN_UPDATE_CHANNEL if self.green.is_uninit() => {
-                    self.green = field.cast_as();
-                }
-                usage::BLUE_UPDATE_CHANNEL if self.blue.is_uninit() => {
-                    self.blue = field.cast_as();
-                }
-                usage::INTENSITY_UPDATE_CHANNEL if self.intensity.is_uninit() => {
-                    self.intensity = field.cast_as();
-                }
+
+                usage::RED_UPDATE_CHANNEL => self.red.set_if_none(args)?,
+                usage::GREEN_UPDATE_CHANNEL => self.green.set_if_none(args)?,
+                usage::BLUE_UPDATE_CHANNEL => self.blue.set_if_none(args)?,
+                usage::INTENSITY_UPDATE_CHANNEL => self.intensity.set_if_none(args)?,
                 _ => (),
             }
         }
+
+        Ok(())
     }
 }
 

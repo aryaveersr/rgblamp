@@ -21,13 +21,15 @@ impl Report for LampArrayControlReport {
         &self.info
     }
 
-    fn register(&mut self, usages: &[u16], size: u32) {
+    fn register(&mut self, usages: &[u16], size: u32) -> LampResult<()> {
         for usage in usages {
-            let field = self.info.create_field(size);
+            let args = self.info.increment(size);
             if *usage == usage::AUTONOMOUS_MODE {
-                self.auto_mode = field.cast_as();
+                self.auto_mode.set(args)?;
             }
         }
+
+        Ok(())
     }
 }
 
@@ -42,7 +44,9 @@ impl LampArrayControlReport {
     pub fn send(&self, file: &mut File, auto_mode: bool) -> LampResult<()> {
         let mut buffer = prep_feature(&self.info);
         let bytes = &mut buffer[1..];
-        self.auto_mode.set(bytes, auto_mode);
+
+        self.auto_mode.write(bytes, auto_mode);
+
         set_feature(file, &mut buffer)
     }
 }

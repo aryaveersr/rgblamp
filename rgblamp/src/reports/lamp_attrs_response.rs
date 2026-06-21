@@ -32,14 +32,14 @@ impl LampAttrsResponseReport {
         let bytes = &get_feature(file, &self.info)?[1..];
 
         Ok(LampAttrs {
-            lamp_id: self.lamp_id.get(bytes),
-            update_latency_us: self.update_latency_us.get(bytes),
-            is_programmable: self.is_programmable.get(bytes),
+            lamp_id: self.lamp_id.extract(bytes),
+            update_latency_us: self.update_latency_us.extract(bytes),
+            is_programmable: self.is_programmable.extract(bytes),
 
-            red_level_count: self.red_level_count.get(bytes),
-            green_level_count: self.green_level_count.get(bytes),
-            blue_level_count: self.blue_level_count.get(bytes),
-            intensity_level_count: self.intensity_level_count.get(bytes),
+            red_level_count: self.red_level_count.extract(bytes),
+            green_level_count: self.green_level_count.extract(bytes),
+            blue_level_count: self.blue_level_count.extract(bytes),
+            intensity_level_count: self.intensity_level_count.extract(bytes),
         })
     }
 }
@@ -49,20 +49,22 @@ impl Report for LampAttrsResponseReport {
         &self.info
     }
 
-    fn register(&mut self, usages: &[u16], size: u32) {
+    fn register(&mut self, usages: &[u16], size: u32) -> LampResult<()> {
         for usage in usages {
-            let field = self.info.create_field(size);
+            let args = self.info.increment(size);
             match *usage {
-                usage::LAMP_ID => self.lamp_id = field,
-                usage::UPDATE_LATENCY_US => self.update_latency_us = field,
-                usage::IS_PROGRAMMABLE => self.is_programmable = field.cast_as(),
-                usage::RED_LEVEL_COUNT => self.red_level_count = field,
-                usage::GREEN_LEVEL_COUNT => self.green_level_count = field,
-                usage::BLUE_LEVEL_COUNT => self.blue_level_count = field,
-                usage::INTENSITY_LEVEL_COUNT => self.intensity_level_count = field,
+                usage::LAMP_ID => self.lamp_id.set(args)?,
+                usage::UPDATE_LATENCY_US => self.update_latency_us.set(args)?,
+                usage::IS_PROGRAMMABLE => self.is_programmable.set(args)?,
+                usage::RED_LEVEL_COUNT => self.red_level_count.set(args)?,
+                usage::GREEN_LEVEL_COUNT => self.green_level_count.set(args)?,
+                usage::BLUE_LEVEL_COUNT => self.blue_level_count.set(args)?,
+                usage::INTENSITY_LEVEL_COUNT => self.intensity_level_count.set(args)?,
                 _ => (),
             }
         }
+
+        Ok(())
     }
 }
 

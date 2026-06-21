@@ -26,8 +26,8 @@ impl LampArrayAttrsReport {
         let bytes = &get_feature(file, &self.info)?[1..];
 
         Ok(LampArrayAttrs {
-            lamp_count: self.lamp_count.get(bytes),
-            min_update_interval_us: self.min_update_interval_us.get(bytes),
+            lamp_count: self.lamp_count.extract(bytes),
+            min_update_interval_us: self.min_update_interval_us.extract(bytes),
         })
     }
 }
@@ -37,15 +37,17 @@ impl Report for LampArrayAttrsReport {
         &self.info
     }
 
-    fn register(&mut self, usages: &[u16], size: u32) {
+    fn register(&mut self, usages: &[u16], size: u32) -> LampResult<()> {
         for usage in usages {
-            let field = self.info.create_field(size);
+            let args = self.info.increment(size);
             match *usage {
-                usage::LAMP_COUNT => self.lamp_count = field,
-                usage::MIN_UPDATE_INTERVAL_US => self.min_update_interval_us = field,
+                usage::LAMP_COUNT => self.lamp_count.set(args)?,
+                usage::MIN_UPDATE_INTERVAL_US => self.min_update_interval_us.set(args)?,
                 _ => (),
             }
         }
+
+        Ok(())
     }
 }
 

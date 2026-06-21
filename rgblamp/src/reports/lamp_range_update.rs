@@ -44,14 +44,14 @@ impl LampRangeUpdateReport {
         let mut buffer = prep_feature(&self.info);
         let bytes = &mut buffer[1..];
 
-        self.lamp_id_start.set(bytes, *lamp_ids.start());
-        self.lamp_id_end.set(bytes, *lamp_ids.end());
-        self.update_flags.set(bytes, update_flags);
+        self.lamp_id_start.write(bytes, *lamp_ids.start());
+        self.lamp_id_end.write(bytes, *lamp_ids.end());
+        self.update_flags.write(bytes, update_flags);
 
-        self.red.set(bytes, color.r);
-        self.green.set(bytes, color.g);
-        self.blue.set(bytes, color.b);
-        self.intensity.set(bytes, color.a);
+        self.red.write(bytes, color.r);
+        self.green.write(bytes, color.g);
+        self.blue.write(bytes, color.b);
+        self.intensity.write(bytes, color.a);
 
         set_feature(file, &mut buffer)
     }
@@ -62,20 +62,22 @@ impl Report for LampRangeUpdateReport {
         &self.info
     }
 
-    fn register(&mut self, usages: &[u16], size: u32) {
+    fn register(&mut self, usages: &[u16], size: u32) -> LampResult<()> {
         for usage in usages {
-            let field = self.info.create_field(size);
+            let args = self.info.increment(size);
             match *usage {
-                usage::LAMP_ID_START => self.lamp_id_start = field,
-                usage::LAMP_ID_END => self.lamp_id_end = field,
-                usage::LAMP_UPDATE_FLAGS => self.update_flags = field.cast_as(),
-                usage::RED_UPDATE_CHANNEL => self.red = field.cast_as(),
-                usage::GREEN_UPDATE_CHANNEL => self.green = field.cast_as(),
-                usage::BLUE_UPDATE_CHANNEL => self.blue = field.cast_as(),
-                usage::INTENSITY_UPDATE_CHANNEL => self.intensity = field.cast_as(),
+                usage::LAMP_ID_START => self.lamp_id_start.set(args)?,
+                usage::LAMP_ID_END => self.lamp_id_end.set(args)?,
+                usage::LAMP_UPDATE_FLAGS => self.update_flags.set(args)?,
+                usage::RED_UPDATE_CHANNEL => self.red.set(args)?,
+                usage::GREEN_UPDATE_CHANNEL => self.green.set(args)?,
+                usage::BLUE_UPDATE_CHANNEL => self.blue.set(args)?,
+                usage::INTENSITY_UPDATE_CHANNEL => self.intensity.set(args)?,
                 _ => (),
             }
         }
+
+        Ok(())
     }
 }
 

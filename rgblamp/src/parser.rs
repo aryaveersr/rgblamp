@@ -167,7 +167,7 @@ impl<'a> ReportDescriptorParser<'a> {
                 usages.resize(count, last_usage);
             }
 
-            self.get_report(report_kind).register(&usages, size);
+            self.get_report(report_kind).register(&usages, size)?;
             self.usages = usages;
         }
 
