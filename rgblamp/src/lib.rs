@@ -8,8 +8,8 @@ use std::{
 use color::Rgba8;
 
 use crate::{
-    error::LampResult,
-    parser::parse_report_descriptor,
+    error::{Error, LampResult},
+    parser::ReportDescriptorParser,
     reports::{
         LampUpdateFlags, Reports, lamp_array_attrs::LampArrayAttrs, lamp_attrs_response::LampAttrs,
         lamp_multi_update::LampMultiUpdateParams, lamp_range_update::LampRangeUpdateParams,
@@ -43,13 +43,14 @@ impl LampArray {
         for entry in entries {
             let descriptor = entry.path().join("device/report_descriptor");
             let bytes = fs::read(descriptor).unwrap();
+            let parser = ReportDescriptorParser::new(&bytes);
+            let device_path = PathBuf::from("/dev").join(entry.path().file_name().unwrap());
 
-            if let Some(reports) = parse_report_descriptor(&bytes) {
-                let device_path = PathBuf::from("/dev").join(entry.path().file_name().unwrap());
+            for reports in parser {
                 let file = OpenOptions::new()
                     .read(true)
                     .write(true)
-                    .open(device_path)
+                    .open(&device_path)
                     .unwrap();
 
                 lamparrays.push(Self::new(file, reports)?);
@@ -104,6 +105,10 @@ impl LampArray {
     }
 
     pub fn set_lamp(&mut self, lamp_id: u32, color: Rgba8) -> LampResult<()> {
+        if lamp_id >= self.lamp_count() {
+            return Err(Error::InvalidLampID);
+        }
+
         self.reports.lamp_range_update.send(
             &mut self.file,
             LampRangeUpdateParams {
@@ -131,6 +136,10 @@ impl LampArray {
         color: Rgba8,
         is_last: bool,
     ) -> LampResult<()> {
+        if *lamp_ids.end() >= self.lamp_count() {
+            return Err(Error::InvalidLampID);
+        }
+
         self.reports.lamp_range_update.send(
             &mut self.file,
             LampRangeUpdateParams {
@@ -146,6 +155,12 @@ impl LampArray {
         items: &[LampUpdateItem],
         is_last: bool,
     ) -> LampResult<()> {
+        for item in items {
+            if item.lamp_id >= self.lamp_count() {
+                return Err(Error::InvalidLampID);
+            }
+        }
+
         let slots = self.reports.lamp_multi_update.slots() as usize;
         let last_idx = items.len().div_ceil(slots);
 

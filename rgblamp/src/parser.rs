@@ -12,10 +12,6 @@ use crate::{
     utils::usage,
 };
 
-pub fn parse_report_descriptor(bytes: &[u8]) -> Option<Reports> {
-    ReportDescriptorParser::new(bytes).parse()
-}
-
 #[derive(Default)]
 pub struct ReportDescriptorParser<'a> {
     // Reference to the next byte to be parsed.
@@ -42,32 +38,33 @@ pub struct ReportDescriptorParser<'a> {
     lamp_array_control_report: Option<LampArrayControlReport>,
 }
 
-impl<'a> ReportDescriptorParser<'a> {
-    fn new(bytes: &'a [u8]) -> Self {
-        Self {
-            bytes,
-            ..Default::default()
-        }
-    }
+impl Iterator for ReportDescriptorParser<'_> {
+    type Item = Reports;
 
-    fn parse(mut self) -> Option<Reports> {
-        while let Some((tag, data)) = self.next() {
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some((tag, data)) = self.next_item() {
             match tag.kind() {
                 ItemKind::Global => self.handle_global_item(tag.tag(), data),
                 ItemKind::Local => self.handle_local_item(tag.tag(), data),
-                ItemKind::Main => self.handle_main_item(tag.tag()),
+                ItemKind::Main => {
+                    if let Some(report) = self.handle_main_item(tag.tag()) {
+                        return Some(report);
+                    }
+                }
                 ItemKind::Reserved => panic!(),
             }
         }
 
-        Some(Reports {
-            lamp_array_attrs: self.lamp_array_attrs_report?,
-            lamp_attrs_request: self.lamp_attrs_request_report?,
-            lamp_attrs_response: self.lamp_attrs_response_report?,
-            lamp_multi_update: self.lamp_multi_update_report?,
-            lamp_range_update: self.lamp_range_update_report?,
-            lamp_array_control: self.lamp_array_control_report?,
-        })
+        None
+    }
+}
+
+impl<'a> ReportDescriptorParser<'a> {
+    pub fn new(bytes: &'a [u8]) -> Self {
+        Self {
+            bytes,
+            ..Default::default()
+        }
     }
 
     fn handle_global_item(&mut self, kind: u4, data: u32) {
@@ -105,15 +102,17 @@ impl<'a> ReportDescriptorParser<'a> {
         }
     }
 
-    fn handle_main_item(&mut self, kind: u4) {
+    fn handle_main_item(&mut self, kind: u4) -> Option<Reports> {
         let kind = MainItemKind::try_from(kind).unwrap();
         match kind {
             MainItemKind::Collection => self.start_collection(),
-            MainItemKind::EndCollection => self.end_collection(),
+            MainItemKind::EndCollection => return self.end_collection(),
             MainItemKind::Input => self.handle_data_item(DataKind::Input),
             MainItemKind::Output => self.handle_data_item(DataKind::Output),
             MainItemKind::Feature => self.handle_data_item(DataKind::Feature),
         }
+
+        None
     }
 
     fn handle_data_item(&mut self, kind: DataKind) {
@@ -183,22 +182,33 @@ impl<'a> ReportDescriptorParser<'a> {
         }
     }
 
-    fn end_collection(&mut self) {
+    fn end_collection(&mut self) -> Option<Reports> {
         assert!(self.collection_depth > 0);
 
         if let Some(kind) = self.report_kind {
             self.get_report(kind).info().validate();
         }
 
-        if Some(self.collection_depth) == self.root_depth {
-            self.root_depth = None;
-        }
-
         self.collection_depth -= 1;
         self.usages.clear();
+
+        match self.root_depth {
+            Some(depth) if depth == self.collection_depth + 1 => {
+                self.root_depth = None;
+                Some(Reports {
+                    lamp_array_attrs: self.lamp_array_attrs_report.take().unwrap(),
+                    lamp_attrs_request: self.lamp_attrs_request_report.take().unwrap(),
+                    lamp_attrs_response: self.lamp_attrs_response_report.take().unwrap(),
+                    lamp_multi_update: self.lamp_multi_update_report.take().unwrap(),
+                    lamp_range_update: self.lamp_range_update_report.take().unwrap(),
+                    lamp_array_control: self.lamp_array_control_report.take().unwrap(),
+                })
+            }
+            _ => None,
+        }
     }
 
-    fn next(&mut self) -> Option<(ItemTag, u32)> {
+    fn next_item(&mut self) -> Option<(ItemTag, u32)> {
         if self.bytes.is_empty() {
             return None;
         }

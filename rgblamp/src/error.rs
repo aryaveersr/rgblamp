@@ -1,6 +1,7 @@
 use thiserror::Error;
 
-pub type LampResult<T> = Result<T, Error>;
+pub(crate) type LampResult<T> = Result<T, Error>;
+pub(crate) type ParserResult<T> = Result<T, ParserError>;
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -10,17 +11,17 @@ pub enum Error {
     #[error(transparent)]
     ParserError(#[from] ParserError),
 
-    #[error("unsupported: {0}")]
-    Unsupported(String),
+    #[error("invalid lamp id")]
+    InvalidLampID,
+    // #[error("unsupported: {0}")]
+    // Unsupported(String),
 }
 
-impl Error {
-    pub fn unsupported(msg: impl Into<String>) -> Self {
-        Error::Unsupported(msg.into())
-    }
-}
-
-pub type ParserResult<T> = Result<T, ParserError>;
+// impl Error {
+//     pub fn unsupported(msg: impl Into<String>) -> Self {
+//         Error::Unsupported(msg.into())
+//     }
+// }
 
 #[derive(Error, Debug)]
 pub enum ParserError {}

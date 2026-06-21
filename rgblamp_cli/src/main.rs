@@ -1,3 +1,4 @@
+use anyhow::{Context, ensure};
 use clap::{Args, Parser, Subcommand};
 use color::{Srgb, parse_color};
 use rgblamp::LampArray;
@@ -30,9 +31,9 @@ struct SetArgs {
     lamp_id: Option<u32>,
 }
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     let args = AppArgs::parse();
-    let mut devices = LampArray::enumerate();
+    let mut devices = LampArray::enumerate()?;
 
     match args.command {
         Command::Set(SetArgs {
@@ -40,53 +41,33 @@ fn main() {
             device_id,
             lamp_id,
         }) => {
-            if devices.is_empty() {
-                println!("No devices found.");
-                return;
-            }
+            ensure!(!devices.is_empty(), "no devices found.");
 
-            let color = match parse_color(&color) {
-                Ok(color) => color.to_alpha_color::<Srgb>().to_rgba8(),
-                Err(err) => {
-                    println!("Invalid color: {err}.");
-                    return;
-                }
-            };
+            let color = parse_color(&color)
+                .map(|c| c.to_alpha_color::<Srgb>().to_rgba8())
+                .context("invalid color")?;
 
             match (device_id, lamp_id) {
                 (None, None) => {
                     for device in &mut devices {
-                        device.set_all_lamps(color);
+                        device.set_all_lamps(color)?;
                     }
                 }
                 (None, Some(lamp_id)) => {
-                    if devices.len() != 1 {
-                        println!(
-                            "Multiple devices found. You need to specify Device ID along with Lamp ID"
-                        );
-                    } else if devices[0].lamp_count() <= lamp_id {
-                        println!("Lamp ID out of range.");
-                    } else {
-                        devices[0].set_lamp(lamp_id, color);
-                    }
+                    ensure!(devices.len() == 1, "multiple devices found, need device id");
+                    devices[0].set_lamp(lamp_id, color)?;
                 }
                 (Some(device_id), None) => {
-                    if device_id >= devices.len() {
-                        println!("Device ID out of range.");
-                    } else {
-                        devices[device_id].set_all_lamps(color);
-                    }
+                    ensure!(device_id < devices.len(), "device id out of range");
+                    devices[device_id].set_all_lamps(color)?;
                 }
                 (Some(device_id), Some(lamp_id)) => {
-                    if device_id >= devices.len() {
-                        println!("Device ID out of range.");
-                    } else if devices[device_id].lamp_count() <= lamp_id {
-                        println!("Lamp ID out of range.");
-                    } else {
-                        devices[device_id].set_lamp(lamp_id, color);
-                    }
+                    ensure!(device_id < devices.len(), "device id out of range");
+                    devices[device_id].set_lamp(lamp_id, color)?;
                 }
             }
         }
     }
+
+    Ok(())
 }

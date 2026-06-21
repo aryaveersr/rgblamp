@@ -9,3 +9,4 @@ rgblamp = { path = "../rgblamp/" }
 color.workspace = true
 
 clap = { version = "4.6.1", features = ["derive"] }
+anyhow = "1.0.102"
