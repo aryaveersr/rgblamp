@@ -1,4 +1,4 @@
-use std::fs::File;
+use std::{fs::File, time::Duration};
 
 use crate::{
     LampAttrs,
@@ -34,7 +34,7 @@ impl LampAttrsResponseReport {
 
         Ok(LampAttrs {
             lamp_id: self.lamp_id.extract(bytes),
-            update_latency_us: self.update_latency_us.extract(bytes),
+            update_latency: Duration::from_micros(self.update_latency_us.extract(bytes) as u64),
             is_programmable: self.is_programmable.extract(bytes),
 
             red_level_count: self.red_level_count.extract(bytes),

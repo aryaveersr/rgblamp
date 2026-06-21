@@ -1,12 +1,13 @@
 use std::{
     fs::{self, File, OpenOptions},
     ops::RangeInclusive,
-    path::PathBuf,
+    path::{Path, PathBuf},
     time::Duration,
 };
 
 use color::Rgba8;
 use log::{error, trace};
+use serde::Serialize;
 
 use crate::{
     error::{Error, LampResult},
@@ -20,6 +21,7 @@ use crate::{
 #[derive(Debug)]
 pub struct LampArray {
     id: usize,
+    path: PathBuf,
     file: File,
     reports: Reports,
     min_update_interval: Duration,
@@ -44,19 +46,14 @@ impl LampArray {
             let descriptor = entry.path().join("device/report_descriptor");
             let bytes = fs::read(descriptor).unwrap();
             let parser = ReportDescriptorParser::new(&bytes);
-            let device_path = PathBuf::from("/dev").join(entry.path().file_name().unwrap());
+            let path = PathBuf::from("/dev").join(entry.path().file_name().unwrap());
 
             for reports in parser {
-                trace!("Found a device at {device_path:?} (id {id_counter})");
+                trace!("Found a device at {path:?} (id {id_counter})");
 
                 let reports = reports?;
-                let file = OpenOptions::new()
-                    .read(true)
-                    .write(true)
-                    .open(&device_path)
-                    .unwrap();
 
-                lamparrays.push(Self::new(id_counter, file, reports)?);
+                lamparrays.push(Self::new(id_counter, path.clone(), reports)?);
                 id_counter += 1;
             }
         }
@@ -64,7 +61,13 @@ impl LampArray {
         Ok(lamparrays)
     }
 
-    fn new(id: usize, mut file: File, reports: Reports) -> LampResult<Self> {
+    fn new(id: usize, path: PathBuf, reports: Reports) -> LampResult<Self> {
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(&path)
+            .unwrap();
+
         let attrs = reports.lamp_array_attrs.get(&mut file)?;
         let mut lamps = Vec::with_capacity(attrs.lamp_count as usize);
 
@@ -92,6 +95,7 @@ impl LampArray {
 
         Ok(Self {
             id,
+            path,
             file,
             reports,
             min_update_interval: Duration::from_micros(attrs.min_update_interval_us as u64),
@@ -101,6 +105,10 @@ impl LampArray {
 
     pub fn id(&self) -> usize {
         self.id
+    }
+
+    pub fn path(&self) -> &Path {
+        self.path.as_path()
     }
 
     pub fn min_update_interval(&self) -> Duration {
@@ -216,10 +224,10 @@ impl LampArray {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct LampAttrs {
     pub lamp_id: u32,
-    pub update_latency_us: u32,
+    pub update_latency: Duration,
     pub is_programmable: bool,
 
     pub red_level_count: u32,
