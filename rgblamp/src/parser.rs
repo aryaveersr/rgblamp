@@ -3,6 +3,7 @@
 use bilge::prelude::*;
 
 use crate::{
+    error::{Error, LampResult},
     reports::{
         Report, Reports, lamp_array_attrs::LampArrayAttrsReport,
         lamp_array_control::LampArrayControlReport, lamp_attrs_request::LampAttrsRequestReport,
@@ -39,23 +40,10 @@ pub struct ReportDescriptorParser<'a> {
 }
 
 impl Iterator for ReportDescriptorParser<'_> {
-    type Item = Reports;
+    type Item = LampResult<Reports>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some((tag, data)) = self.next_item() {
-            match tag.kind() {
-                ItemKind::Global => self.handle_global_item(tag.tag(), data),
-                ItemKind::Local => self.handle_local_item(tag.tag(), data),
-                ItemKind::Main => {
-                    if let Some(report) = self.handle_main_item(tag.tag()) {
-                        return Some(report);
-                    }
-                }
-                ItemKind::Reserved => panic!(),
-            }
-        }
-
-        None
+        self.parse().transpose()
     }
 }
 
@@ -67,7 +55,24 @@ impl<'a> ReportDescriptorParser<'a> {
         }
     }
 
-    fn handle_global_item(&mut self, kind: u4, data: u32) {
+    fn parse(&mut self) -> LampResult<Option<Reports>> {
+        while let Some((tag, data)) = self.next_item() {
+            match tag.kind() {
+                ItemKind::Global => self.handle_global_item(tag.tag(), data)?,
+                ItemKind::Local => self.handle_local_item(tag.tag(), data)?,
+                ItemKind::Main => {
+                    if let Some(report) = self.handle_main_item(tag.tag())? {
+                        return Ok(Some(report));
+                    }
+                }
+                ItemKind::Reserved => panic!("reserved"),
+            }
+        }
+
+        Ok(None)
+    }
+
+    fn handle_global_item(&mut self, kind: u4, data: u32) -> LampResult<()> {
         let kind = GlobalItemKind::try_from(kind).unwrap();
         match kind {
             GlobalItemKind::UsagePage => self.globals.usage_page = Some(data as u16),
@@ -80,50 +85,76 @@ impl<'a> ReportDescriptorParser<'a> {
             GlobalItemKind::Pop => self.globals = self.global_stack.pop().unwrap(),
             _ => (),
         }
+
+        Ok(())
     }
 
-    fn handle_local_item(&mut self, kind: u4, data: u32) {
+    fn handle_local_item(&mut self, kind: u4, data: u32) -> LampResult<()> {
         let kind = LocalItemKind::try_from(kind).unwrap();
         match kind {
             LocalItemKind::Usage => {
-                assert!(data <= u16::MAX as u32);
+                if data > u16::MAX as u32 {
+                    return Err(Error::unsupported("full-sized usages"));
+                }
+
                 self.usages.push(data as u16);
             }
             LocalItemKind::UsageMin => {
-                assert!(data <= u16::MAX as u32);
+                if data > u16::MAX as u32 {
+                    return Err(Error::unsupported("full-sized usages"));
+                }
+
                 self.usage_range_min = Some(data as u16);
             }
             LocalItemKind::UsageMax => {
+                if data > u16::MAX as u32 {
+                    return Err(Error::unsupported("full-sized usages"));
+                }
+
                 let min = self.usage_range_min.take().unwrap();
                 let max = data as u16;
                 self.usages.extend(min..=max);
             }
             _ => (),
         }
+
+        Ok(())
     }
 
-    fn handle_main_item(&mut self, kind: u4) -> Option<Reports> {
+    fn handle_main_item(&mut self, kind: u4) -> LampResult<Option<Reports>> {
         let kind = MainItemKind::try_from(kind).unwrap();
         match kind {
-            MainItemKind::Collection => self.start_collection(),
+            MainItemKind::Collection => self.start_collection()?,
             MainItemKind::EndCollection => return self.end_collection(),
-            MainItemKind::Input => self.handle_data_item(DataKind::Input),
-            MainItemKind::Output => self.handle_data_item(DataKind::Output),
-            MainItemKind::Feature => self.handle_data_item(DataKind::Feature),
+            MainItemKind::Input => self.handle_data_item(DataKind::Input)?,
+            MainItemKind::Output => self.handle_data_item(DataKind::Output)?,
+            MainItemKind::Feature => self.handle_data_item(DataKind::Feature)?,
         }
 
-        None
+        Ok(None)
     }
 
-    fn handle_data_item(&mut self, kind: DataKind) {
+    fn handle_data_item(&mut self, kind: DataKind) -> LampResult<()> {
         if let Some(report_kind) = self.report_kind {
             let size = self.globals.report_size.unwrap();
             let count = self.globals.report_count.unwrap() as usize;
 
-            assert_ne!(kind, DataKind::Input);
-            assert_ne!(kind, DataKind::Output, "TODO");
-            assert!(!self.usages.is_empty());
-            assert!(self.usages.len() <= count);
+            if kind == DataKind::Input {
+                return Err(Error::parser("input data item found in lamparray page"));
+            }
+
+            if kind == DataKind::Output {
+                // TODO
+                return Err(Error::unsupported("output data items"));
+            }
+
+            if self.usages.is_empty() {
+                return Err(Error::parser("no usage specified for data item"));
+            }
+
+            if self.usages.len() > count {
+                return Err(Error::parser("usages exceeds number of controls"));
+            }
 
             let mut usages = std::mem::take(&mut self.usages);
 
@@ -140,13 +171,14 @@ impl<'a> ReportDescriptorParser<'a> {
         }
 
         self.usages.clear();
+        Ok(())
     }
 
-    fn start_collection(&mut self) {
+    fn start_collection(&mut self) -> LampResult<()> {
         self.collection_depth += 1;
 
         if self.globals.usage_page != Some(usage::PAGE_LIGHTING) {
-            return;
+            return Ok(());
         }
 
         let id = self.globals.report_id;
@@ -180,9 +212,11 @@ impl<'a> ReportDescriptorParser<'a> {
             }
             _ => self.report_kind = None,
         }
+
+        Ok(())
     }
 
-    fn end_collection(&mut self) -> Option<Reports> {
+    fn end_collection(&mut self) -> LampResult<Option<Reports>> {
         assert!(self.collection_depth > 0);
 
         if let Some(kind) = self.report_kind {
@@ -192,7 +226,7 @@ impl<'a> ReportDescriptorParser<'a> {
         self.collection_depth -= 1;
         self.usages.clear();
 
-        match self.root_depth {
+        Ok(match self.root_depth {
             Some(depth) if depth == self.collection_depth + 1 => {
                 self.root_depth = None;
                 Some(Reports {
@@ -205,7 +239,7 @@ impl<'a> ReportDescriptorParser<'a> {
                 })
             }
             _ => None,
-        }
+        })
     }
 
     fn next_item(&mut self) -> Option<(ItemTag, u32)> {

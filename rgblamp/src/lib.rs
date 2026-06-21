@@ -47,6 +47,7 @@ impl LampArray {
             let device_path = PathBuf::from("/dev").join(entry.path().file_name().unwrap());
 
             for reports in parser {
+                let reports = reports?;
                 let file = OpenOptions::new()
                     .read(true)
                     .write(true)
@@ -70,10 +71,10 @@ impl LampArray {
         for _ in 0..array_attrs.lamp_count {
             let attrs = reports.lamp_attrs_response.get(&mut file)?;
 
-            assert!(
-                attrs.is_programmable,
-                "Non-programmable lamps are not supported (TODO)"
-            );
+            if !attrs.is_programmable {
+                // TODO
+                return Err(Error::unsupported("non-programmable lamp"));
+            }
 
             lamp_attrs.push(attrs);
         }

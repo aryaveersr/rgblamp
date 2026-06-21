@@ -1,27 +1,28 @@
 use thiserror::Error;
 
 pub(crate) type LampResult<T> = Result<T, Error>;
-pub(crate) type ParserResult<T> = Result<T, ParserError>;
 
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("failed to communicate with device")]
-    IoError(#[from] nix::Error),
-
-    #[error(transparent)]
-    ParserError(#[from] ParserError),
+    Io(#[from] nix::Error),
 
     #[error("invalid lamp id")]
     InvalidLampID,
-    // #[error("unsupported: {0}")]
-    // Unsupported(String),
+
+    #[error("failed to parse report descriptor: {0}")]
+    Parser(String),
+
+    #[error("unsupported: {0}")]
+    Unsupported(String),
 }
 
-// impl Error {
-//     pub fn unsupported(msg: impl Into<String>) -> Self {
-//         Error::Unsupported(msg.into())
-//     }
-// }
+impl Error {
+    pub fn parser(msg: impl Into<String>) -> Self {
+        Self::Parser(msg.into())
+    }
 
-#[derive(Error, Debug)]
-pub enum ParserError {}
+    pub fn unsupported(msg: impl Into<String>) -> Self {
+        Self::Unsupported(msg.into())
+    }
+}
