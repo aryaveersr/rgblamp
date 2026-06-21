@@ -227,7 +227,7 @@ impl LampArray {
 pub struct LampAttrs {
     pub lamp_id: u32,
     pub update_latency: Duration,
-    pub is_programmable: bool,
+    pub programmable: bool,
 
     pub red_level_count: u32,
     pub green_level_count: u32,
