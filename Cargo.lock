@@ -269,21 +269,13 @@ dependencies = [
 name = "rgblamp"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "bilge",
+ "clap",
  "color",
  "enum_dispatch",
  "nix",
  "thiserror",
-]
-
-[[package]]
-name = "rgblamp_cli"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "color",
- "rgblamp",
 ]
 
 [[package]]

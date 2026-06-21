@@ -1,7 +1,17 @@
-[workspace]
-resolver = "3"
-members = ["rgblamp_cli/", "rgblamp/"]
-default-members = ["rgblamp_cli/"]
+[package]
+name = "rgblamp"
+version = "0.1.0"
+edition = "2024"
 
-[workspace.dependencies]
+[[bin]]
+name = "rgblamp"
+path = "src/bin/main.rs"
+
+[dependencies]
+anyhow = "1.0.102"
+bilge = "0.3.0"
+clap = { version = "4.6.1", features = ["derive"] }
 color = "0.3.3"
+enum_dispatch = "0.3.13"
+nix = { version = "0.31.3", features = ["ioctl"] }
+thiserror = "2.0.18"
