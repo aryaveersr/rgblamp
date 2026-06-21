@@ -65,7 +65,9 @@ impl LampArray {
         let array_attrs = reports.lamp_array_attrs.get(&mut file)?;
         let mut lamp_attrs = Vec::with_capacity(array_attrs.lamp_count as usize);
 
-        assert!(array_attrs.lamp_count > 0);
+        if array_attrs.lamp_count == 0 {
+            return Err(Error::NoLamps);
+        }
 
         reports.lamp_attrs_request.send(&mut file, 0)?;
         for _ in 0..array_attrs.lamp_count {

@@ -1,6 +1,7 @@
 //! The Report Descriptor format is covered in Section 6 of HID Spec.
 
 use bilge::prelude::*;
+use enum_iterator::{Sequence, all};
 
 use crate::{
     error::{Error, LampResult},
@@ -56,7 +57,7 @@ impl<'a> ReportDescriptorParser<'a> {
     }
 
     fn parse(&mut self) -> LampResult<Option<Reports>> {
-        while let Some((tag, data)) = self.next_item() {
+        while let Some((tag, data)) = self.next_item()? {
             match tag.kind() {
                 ItemKind::Global => self.handle_global_item(tag.tag(), data)?,
                 ItemKind::Local => self.handle_local_item(tag.tag(), data)?,
@@ -217,10 +218,8 @@ impl<'a> ReportDescriptorParser<'a> {
     }
 
     fn end_collection(&mut self) -> LampResult<Option<Reports>> {
-        assert!(self.collection_depth > 0);
-
-        if let Some(kind) = self.report_kind {
-            self.get_report(kind).info().validate();
+        if self.collection_depth == 0 {
+            return Err(Error::parser("unbalanced collection items"));
         }
 
         self.collection_depth -= 1;
@@ -229,6 +228,13 @@ impl<'a> ReportDescriptorParser<'a> {
         Ok(match self.root_depth {
             Some(depth) if depth == self.collection_depth + 1 => {
                 self.root_depth = None;
+
+                for kind in all::<ReportKind>() {
+                    if self.get_report(kind).info().size % 8 != 0 {
+                        return Err(Error::parser("report size is not byte-aligned"));
+                    }
+                }
+
                 Some(Reports {
                     lamp_array_attrs: self.lamp_array_attrs_report.take().unwrap(),
                     lamp_attrs_request: self.lamp_attrs_request_report.take().unwrap(),
@@ -242,9 +248,9 @@ impl<'a> ReportDescriptorParser<'a> {
         })
     }
 
-    fn next_item(&mut self) -> Option<(ItemTag, u32)> {
+    fn next_item(&mut self) -> LampResult<Option<(ItemTag, u32)>> {
         if self.bytes.is_empty() {
-            return None;
+            return Ok(None);
         }
 
         let tag = ItemTag::from(self.bytes[0]);
@@ -255,7 +261,9 @@ impl<'a> ReportDescriptorParser<'a> {
             ItemSize::Four => 4,
         };
 
-        assert!(self.bytes.len() > len);
+        if self.bytes.len() <= len {
+            return Err(Error::parser("unexpected eof"));
+        }
 
         let slice = &self.bytes[1..(1 + len)];
         self.bytes = &self.bytes[(1 + len)..];
@@ -263,7 +271,7 @@ impl<'a> ReportDescriptorParser<'a> {
         let mut buffer = [0u8; 4];
         buffer[..len].copy_from_slice(slice);
 
-        Some((tag, u32::from_le_bytes(buffer)))
+        Ok(Some((tag, u32::from_le_bytes(buffer))))
     }
 
     fn get_report(&mut self, kind: ReportKind) -> &mut dyn Report {
@@ -299,7 +307,7 @@ enum DataKind {
     Feature,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Sequence)]
 enum ReportKind {
     ArrayAttrs,
     AttrsRequest,

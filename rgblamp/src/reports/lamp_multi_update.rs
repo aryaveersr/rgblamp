@@ -44,7 +44,7 @@ impl LampMultiUpdateReport {
             items,
         } = params;
 
-        assert!(items.len() <= self.slots as usize);
+        debug_assert!(items.len() <= self.slots as usize);
 
         let mut buffer = prep_feature(&self.info);
         let bytes = &mut buffer[1..];

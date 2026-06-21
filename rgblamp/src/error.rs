@@ -10,6 +10,9 @@ pub enum Error {
     #[error("invalid lamp id")]
     InvalidLampID,
 
+    #[error("device returned no lamps")]
+    NoLamps,
+
     #[error("failed to parse report descriptor: {0}")]
     Parser(String),
 

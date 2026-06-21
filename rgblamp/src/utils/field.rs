@@ -39,16 +39,12 @@ where
     }
 
     pub fn get(&self, bytes: &[u8]) -> T {
-        assert!(bytes.len() >= self.size + self.offset);
-
         let mut buffer = [0u8; 4];
         buffer[..self.size].copy_from_slice(&bytes[self.offset..(self.offset + self.size)]);
         u32::from_le_bytes(buffer).try_into().unwrap()
     }
 
     pub fn set(&self, bytes: &mut [u8], value: T) {
-        assert!(bytes.len() >= self.size + self.offset);
-
         let value = value.into().to_le_bytes();
         bytes[self.offset..(self.offset + self.size)].copy_from_slice(&value[..self.size]);
     }

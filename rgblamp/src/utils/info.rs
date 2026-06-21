@@ -11,10 +11,6 @@ impl ReportInfo {
         Self { id, size: 0 }
     }
 
-    pub fn validate(&self) {
-        assert_eq!(self.size % 8, 0)
-    }
-
     pub fn bytes_len(&self) -> usize {
         self.size as usize / 8
     }
