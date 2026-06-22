@@ -31,10 +31,7 @@ impl LampArray {
         trace!("Enumerating LampArray devices");
 
         let mut lamparrays = Vec::new();
-        let mut entries: Vec<_> = fs::read_dir("/sys/class/hidraw")
-            .unwrap()
-            .filter_map(|e| e.ok())
-            .collect();
+        let mut entries = fs::read_dir("/sys/class/hidraw")?.collect::<Result<Vec<_>, _>>()?;
 
         entries.sort_by_key(|dir| dir.file_name());
 
@@ -42,7 +39,7 @@ impl LampArray {
 
         for entry in entries {
             let descriptor = entry.path().join("device/report_descriptor");
-            let bytes = fs::read(descriptor).unwrap();
+            let bytes = fs::read(descriptor)?;
             let parser = ReportDescriptorParser::new(&bytes);
             let path = PathBuf::from("/dev").join(entry.path().file_name().unwrap());
 
@@ -60,11 +57,7 @@ impl LampArray {
     }
 
     fn new(id: usize, path: PathBuf, reports: Reports) -> LampResult<Self> {
-        let mut file = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .open(&path)
-            .unwrap();
+        let mut file = OpenOptions::new().read(true).write(true).open(&path)?;
 
         let attrs = reports.lamp_array_attrs.get(&mut file)?;
         let mut lamps = Vec::with_capacity(attrs.lamp_count as usize);

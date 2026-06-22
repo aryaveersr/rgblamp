@@ -5,7 +5,13 @@ pub(crate) type LampResult<T> = Result<T, Error>;
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("failed to communicate with device")]
-    Io(#[from] nix::Error),
+    Ioctl(#[from] nix::Error),
+
+    #[error("filesystem error")]
+    FileIo(#[source] std::io::Error),
+
+    #[error("insufficient permission to access devices")]
+    Permission(#[source] std::io::Error),
 
     #[error("invalid lamp id")]
     InvalidLampID,
@@ -30,5 +36,14 @@ impl Error {
 
     pub fn unsupported(msg: impl Into<String>) -> Self {
         Self::Unsupported(msg.into())
+    }
+}
+
+impl From<std::io::Error> for Error {
+    fn from(value: std::io::Error) -> Self {
+        match value.kind() {
+            std::io::ErrorKind::PermissionDenied => Self::Permission(value),
+            _ => Self::FileIo(value),
+        }
     }
 }
