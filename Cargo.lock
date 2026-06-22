@@ -450,7 +450,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "rgblamp_cli"
+name = "rgblampctl"
 version = "0.1.0"
 dependencies = [
  "anyhow",

@@ -1,7 +1,7 @@
 [workspace]
 resolver = "3"
-members = ["rgblamp_cli/", "rgblamp/"]
-default-members = ["rgblamp_cli/", "rgblamp/"]
+members = ["rgblamp/", "rgblampctl/"]
+default-members = ["rgblamp/", "rgblampctl/"]
 
 [workspace.dependencies]
 color = "0.3.3"
