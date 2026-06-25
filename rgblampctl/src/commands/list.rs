@@ -2,7 +2,7 @@ use std::io::stdout;
 
 use anyhow::ensure;
 use clap::Args;
-use rgblamp::{LampArray, LampAttrs};
+use rgblamp::{LampArray, LampAttrs, lamparrays::LampArrays};
 
 #[derive(Args, Debug)]
 pub struct ListCommand {
@@ -17,7 +17,7 @@ pub struct ListCommand {
 
 impl ListCommand {
     pub fn exec(&self) -> anyhow::Result<()> {
-        let devices = LampArray::enumerate()?;
+        let devices = LampArrays::new()?;
 
         if let Some(device_id) = self.device_id {
             ensure!(device_id < devices.len(), "device id out of range");
@@ -49,16 +49,14 @@ impl ListCommand {
 
     fn json_device(&self, device: &LampArray) -> serde_json::Value {
         serde_json::json!({
-            "id": &device.id(),
-            "path": device.path(),
+            "name": &device.name(),
             "min_update_interval": &device.min_update_interval(),
             "lamps": device.lamps()
         })
     }
 
     fn list_device(&self, device: &LampArray) {
-        println!("Device {}:", device.id());
-        println!("  Path: {}", device.path().display());
+        println!("Device {}:", device.name());
         println!("  Number of lamps: {}", device.lamps().len());
         println!(
             "  Minimum interval between updates: {:?}",

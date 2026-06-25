@@ -1,6 +1,6 @@
 use anyhow::ensure;
 use clap::{Args, ValueEnum};
-use rgblamp::LampArray;
+use rgblamp::lamparrays::LampArrays;
 
 #[derive(Args, Debug)]
 pub struct AutoCommand {
@@ -21,7 +21,7 @@ enum Switch {
 
 impl AutoCommand {
     pub fn exec(&self) -> anyhow::Result<()> {
-        let mut devices = LampArray::enumerate()?;
+        let mut devices = LampArrays::new()?;
         let auto_mode = self.value == Switch::On;
 
         ensure!(!devices.is_empty(), "no devices found.");
@@ -32,7 +32,7 @@ impl AutoCommand {
                 devices[device_id].set_auto_mode(auto_mode)?;
             }
             None => {
-                for device in &mut devices {
+                for device in devices.iter_mut() {
                     device.set_auto_mode(auto_mode)?;
                 }
             }

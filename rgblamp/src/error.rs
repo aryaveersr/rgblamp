@@ -22,6 +22,9 @@ pub enum Error {
     #[error("device returned no lamps")]
     NoLamps,
 
+    #[error("failed to parse device properties: {0}")]
+    DeviceParser(String),
+
     #[error("failed to parse report descriptor: {0}")]
     Parser(String),
 
@@ -30,6 +33,10 @@ pub enum Error {
 }
 
 impl Error {
+    pub fn device_parser(msg: impl Into<String>) -> Self {
+        Self::DeviceParser(msg.into())
+    }
+
     pub fn parser(msg: impl Into<String>) -> Self {
         Self::Parser(msg.into())
     }

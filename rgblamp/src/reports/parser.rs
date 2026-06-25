@@ -39,14 +39,6 @@ pub struct ReportDescriptorParser<'a> {
     lamp_array_control_report: Option<LampArrayControlReport>,
 }
 
-impl Iterator for ReportDescriptorParser<'_> {
-    type Item = LampResult<Reports>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.parse().transpose()
-    }
-}
-
 impl<'a> ReportDescriptorParser<'a> {
     pub fn new(bytes: &'a [u8]) -> Self {
         Self {
@@ -55,8 +47,8 @@ impl<'a> ReportDescriptorParser<'a> {
         }
     }
 
-    fn parse(&mut self) -> LampResult<Option<Reports>> {
-        while let Some((tag, data)) = self.next_item()? {
+    pub fn next(&mut self) -> LampResult<Option<Reports>> {
+        while let Some((tag, data)) = self.consume_item()? {
             match tag.kind() {
                 ItemKind::Global => self.handle_global_item(tag.tag(), data)?,
                 ItemKind::Local => self.handle_local_item(tag.tag(), data)?,
@@ -257,7 +249,7 @@ impl<'a> ReportDescriptorParser<'a> {
         })
     }
 
-    fn next_item(&mut self) -> LampResult<Option<(ItemTag, u32)>> {
+    fn consume_item(&mut self) -> LampResult<Option<(ItemTag, u32)>> {
         if self.bytes.is_empty() {
             return Ok(None);
         }

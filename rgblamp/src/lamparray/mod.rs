@@ -1,7 +1,8 @@
 use std::{
-    fs::{self, File, OpenOptions},
+    fs::{File, OpenOptions},
     ops::RangeInclusive,
-    path::{Path, PathBuf},
+    path::PathBuf,
+    str::FromStr,
     time::Duration,
 };
 
@@ -10,54 +11,32 @@ use log::{error, trace};
 
 use crate::{
     error::{Error, LampResult},
+    lamparray::device_info::DeviceInfo,
     reports::{
         LampUpdateFlags, Reports, lamp_multi_update::LampMultiUpdateParams,
-        lamp_range_update::LampRangeUpdateParams, parser::ReportDescriptorParser,
+        lamp_range_update::LampRangeUpdateParams,
     },
 };
 
+pub mod device_info;
+pub mod lamparrays;
+
 #[derive(Debug)]
 pub struct LampArray {
-    id: usize,
-    path: PathBuf,
+    info: DeviceInfo,
     file: File,
     reports: Reports,
+
     min_update_interval: Duration,
     lamps: Vec<LampAttrs>,
 }
 
 impl LampArray {
-    pub fn enumerate() -> LampResult<Vec<Self>> {
-        trace!("Enumerating LampArray devices");
-
-        let mut lamparrays = Vec::new();
-        let mut entries = fs::read_dir("/sys/class/hidraw")?.collect::<Result<Vec<_>, _>>()?;
-
-        entries.sort_by_key(|dir| dir.file_name());
-
-        let mut id_counter = 0;
-
-        for entry in entries {
-            let descriptor = entry.path().join("device/report_descriptor");
-            let bytes = fs::read(descriptor)?;
-            let parser = ReportDescriptorParser::new(&bytes);
-            let path = PathBuf::from("/dev").join(entry.path().file_name().unwrap());
-
-            for reports in parser {
-                trace!("Found a device at {path:?} (id {id_counter})");
-
-                let reports = reports?;
-
-                lamparrays.push(Self::new(id_counter, path.clone(), reports)?);
-                id_counter += 1;
-            }
-        }
-
-        Ok(lamparrays)
-    }
-
-    fn new(id: usize, path: PathBuf, reports: Reports) -> LampResult<Self> {
-        let mut file = OpenOptions::new().read(true).write(true).open(&path)?;
+    pub fn new(info: DeviceInfo, reports: Reports) -> LampResult<Self> {
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(PathBuf::from_str("/dev").unwrap().join(&info.dev_name))?;
 
         let attrs = reports.lamp_array_attrs.get(&mut file)?;
         let mut lamps = Vec::with_capacity(attrs.lamp_count as usize);
@@ -65,7 +44,7 @@ impl LampArray {
         trace!("Received LampArray attributes: {attrs:?}");
 
         if attrs.lamp_count == 0 {
-            error!("Device id {id} has no lamps");
+            error!("Device {} has no lamps", info.dev_name);
             return Err(Error::NoLamps);
         }
 
@@ -85,8 +64,7 @@ impl LampArray {
         }
 
         Ok(Self {
-            id,
-            path,
+            info,
             file,
             reports,
             min_update_interval: Duration::from_micros(attrs.min_update_interval_us as u64),
@@ -94,12 +72,8 @@ impl LampArray {
         })
     }
 
-    pub fn id(&self) -> usize {
-        self.id
-    }
-
-    pub fn path(&self) -> &Path {
-        self.path.as_path()
+    pub fn name(&self) -> &str {
+        &self.info.dev_name
     }
 
     pub fn min_update_interval(&self) -> Duration {
@@ -111,7 +85,10 @@ impl LampArray {
     }
 
     pub fn set_auto_mode(&mut self, auto_mode: bool) -> LampResult<()> {
-        trace!("Setting auto mode to '{auto_mode}' for device {}", self.id);
+        trace!(
+            "Setting auto mode to '{auto_mode}' for device {}",
+            self.info.dev_name
+        );
 
         self.reports
             .lamp_array_control
@@ -121,7 +98,7 @@ impl LampArray {
     pub fn set_lamp(&mut self, lamp_id: u32, color: Rgba8) -> LampResult<()> {
         trace!(
             "Setting lamp {lamp_id} to color '{color}' for device {}",
-            self.id
+            self.info.dev_name
         );
 
         if lamp_id >= self.lamps.len() as u32 {
@@ -142,7 +119,7 @@ impl LampArray {
     pub fn set_all_lamps(&mut self, color: Rgba8) -> LampResult<()> {
         trace!(
             "Setting all lamps to color '{color}' for device {}",
-            self.id
+            self.info.dev_name
         );
 
         self.reports.lamp_range_update.send(
@@ -163,7 +140,7 @@ impl LampArray {
     ) -> LampResult<()> {
         trace!(
             "Setting all lamps in range {lamp_ids:?} to color '{color}' for device {}",
-            self.id
+            self.info.dev_name
         );
         trace!("Is this is last in a batch: {is_last}");
 
@@ -192,7 +169,7 @@ impl LampArray {
         items: &[LampUpdateItem],
         is_last: bool,
     ) -> LampResult<()> {
-        trace!("Setting multiple lamps for device {}", self.id);
+        trace!("Setting multiple lamps for device {}", self.info.dev_name);
         trace!("{items:?}");
         trace!("Is this is last in a batch: {is_last}");
 

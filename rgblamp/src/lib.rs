@@ -1,7 +1,7 @@
-pub mod error;
-
-mod lamp_array;
+mod error;
+mod lamparray;
 mod reports;
 mod utils;
 
-pub use lamp_array::*;
+pub use error::*;
+pub use lamparray::*;

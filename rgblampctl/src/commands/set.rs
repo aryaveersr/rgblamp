@@ -1,7 +1,7 @@
 use anyhow::{Context, ensure};
 use clap::Args;
 use color::{Srgb, parse_color};
-use rgblamp::LampArray;
+use rgblamp::lamparrays::LampArrays;
 
 #[derive(Args, Debug)]
 pub struct SetCommand {
@@ -19,7 +19,7 @@ pub struct SetCommand {
 
 impl SetCommand {
     pub fn exec(&self) -> anyhow::Result<()> {
-        let mut devices = LampArray::enumerate()?;
+        let mut devices = LampArrays::new()?;
 
         ensure!(!devices.is_empty(), "no devices found.");
 
@@ -29,7 +29,7 @@ impl SetCommand {
 
         match (self.device_id, self.lamp_id) {
             (None, None) => {
-                for device in &mut devices {
+                for device in devices.iter_mut() {
                     device.set_all_lamps(color)?;
                 }
             }
