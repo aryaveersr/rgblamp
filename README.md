@@ -6,7 +6,7 @@ A command-line application and library to control HID LampArray devices on Linux
 
 ## Todo
 
-- Unique way (or ways?) to identify devices. Current method of assigning is just a placeholder.
+- Better list command that covers more properties
 - Support for effects like rainbow, breathing, etc.
 - Easy installation for udev rules? Also a doctor command to check whether installation was correct.
 - Storing different effects or settings as profiles.
