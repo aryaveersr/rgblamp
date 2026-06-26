@@ -9,9 +9,8 @@ use crate::{
         Report, ReportKind, Reports, lamp_array_attrs::LampArrayAttrsReport,
         lamp_array_control::LampArrayControlReport, lamp_attrs_request::LampAttrsRequestReport,
         lamp_attrs_response::LampAttrsResponseReport, lamp_multi_update::LampMultiUpdateReport,
-        lamp_range_update::LampRangeUpdateReport,
+        lamp_range_update::LampRangeUpdateReport, utils::usage,
     },
-    utils::usage,
 };
 
 #[derive(Default)]

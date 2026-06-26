@@ -4,11 +4,13 @@ use color::Rgba8;
 
 use crate::{
     error::LampResult,
-    reports::{LampUpdateFlags, Report, ReportInfo},
-    utils::{
-        field::ReportField,
-        io::{prep_feature, set_feature},
-        usage,
+    reports::{
+        LampUpdateFlags, Report, ReportInfo,
+        utils::{
+            field::{Buffer, ReportField},
+            io::set_feature,
+            usage,
+        },
     },
 };
 
@@ -47,11 +49,10 @@ impl LampMultiUpdateReport {
 
         debug_assert!(items.len() <= self.slots as usize);
 
-        let mut buffer = prep_feature(&self.info);
-        let bytes = &mut buffer[1..];
+        let mut buffer = Buffer::new(&self.info);
 
-        self.lamp_count.write(bytes, items.len() as u32);
-        self.update_flags.write(bytes, update_flags);
+        self.lamp_count.write(&mut buffer, items.len() as u32);
+        self.update_flags.write(&mut buffer, update_flags);
 
         let mut lamp_id = self.lamp_id;
 
@@ -63,13 +64,13 @@ impl LampMultiUpdateReport {
         let color_size = red.size() * 4;
 
         for item in items {
-            lamp_id.write(bytes, item.lamp_id);
+            lamp_id.write(&mut buffer, item.lamp_id);
             lamp_id += lamp_id.size();
 
-            red.write(bytes, item.color.r);
-            green.write(bytes, item.color.g);
-            blue.write(bytes, item.color.b);
-            intensity.write(bytes, item.color.a);
+            red.write(&mut buffer, item.color.r);
+            green.write(&mut buffer, item.color.g);
+            blue.write(&mut buffer, item.color.b);
+            intensity.write(&mut buffer, item.color.a);
 
             red += color_size;
             green += color_size;

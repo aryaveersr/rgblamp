@@ -3,7 +3,6 @@ mod error;
 mod lamp_array;
 mod parser;
 mod reports;
-mod utils;
 
 pub use builder::LampUpdateBuilder;
 pub use error::*;

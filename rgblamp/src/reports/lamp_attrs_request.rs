@@ -2,11 +2,13 @@ use std::fs::File;
 
 use crate::{
     error::LampResult,
-    reports::{Report, ReportInfo},
-    utils::{
-        field::ReportField,
-        io::{prep_feature, set_feature},
-        usage,
+    reports::{
+        Report, ReportInfo,
+        utils::{
+            field::{Buffer, ReportField},
+            io::set_feature,
+            usage,
+        },
     },
 };
 
@@ -46,10 +48,9 @@ impl LampAttrsRequestReport {
     }
 
     pub fn send(&self, file: &mut File, lamp_id: u32) -> LampResult<()> {
-        let mut buffer = prep_feature(&self.info);
-        let bytes = &mut buffer[1..];
+        let mut buffer = Buffer::new(&self.info);
 
-        self.lamp_id.write(bytes, lamp_id);
+        self.lamp_id.write(&mut buffer, lamp_id);
 
         set_feature(file, &mut buffer)
     }

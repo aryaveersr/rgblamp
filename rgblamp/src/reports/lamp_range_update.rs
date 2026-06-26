@@ -4,11 +4,13 @@ use color::Rgba8;
 
 use crate::{
     error::LampResult,
-    reports::{LampUpdateFlags, Report, ReportInfo},
-    utils::{
-        field::ReportField,
-        io::{prep_feature, set_feature},
-        usage,
+    reports::{
+        LampUpdateFlags, Report, ReportInfo,
+        utils::{
+            field::{Buffer, ReportField},
+            io::set_feature,
+            usage,
+        },
     },
 };
 
@@ -41,17 +43,16 @@ impl LampRangeUpdateReport {
             color,
         } = params;
 
-        let mut buffer = prep_feature(&self.info);
-        let bytes = &mut buffer[1..];
+        let mut buffer = Buffer::new(&self.info);
 
-        self.lamp_id_start.write(bytes, *lamp_ids.start());
-        self.lamp_id_end.write(bytes, *lamp_ids.end());
-        self.update_flags.write(bytes, update_flags);
+        self.lamp_id_start.write(&mut buffer, *lamp_ids.start());
+        self.lamp_id_end.write(&mut buffer, *lamp_ids.end());
+        self.update_flags.write(&mut buffer, update_flags);
 
-        self.red.write(bytes, color.r);
-        self.green.write(bytes, color.g);
-        self.blue.write(bytes, color.b);
-        self.intensity.write(bytes, color.a);
+        self.red.write(&mut buffer, color.r);
+        self.green.write(&mut buffer, color.g);
+        self.blue.write(&mut buffer, color.b);
+        self.intensity.write(&mut buffer, color.a);
 
         set_feature(file, &mut buffer)
     }

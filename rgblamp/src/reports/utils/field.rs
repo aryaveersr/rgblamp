@@ -1,6 +1,9 @@
 use std::{fmt::Debug, marker::PhantomData, ops::AddAssign};
 
-use crate::error::{Error, LampResult};
+use crate::{
+    error::{Error, LampResult},
+    reports::utils::info::ReportInfo,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct ReportFieldInner {
@@ -79,19 +82,19 @@ where
         }
     }
 
-    pub fn extract(&self, bytes: &[u8]) -> T {
+    pub fn extract(&self, buffer: &Buffer) -> T {
         let ReportFieldInner { offset, size } = self.inner.unwrap();
 
-        let mut buffer = [0u8; 4];
-        buffer[..size].copy_from_slice(&bytes[offset..(offset + size)]);
-        u32::from_le_bytes(buffer).try_into().unwrap()
+        let mut value = [0u8; 4];
+        value[..size].copy_from_slice(&buffer.body()[offset..(offset + size)]);
+        u32::from_le_bytes(value).try_into().unwrap()
     }
 
-    pub fn write(&self, bytes: &mut [u8], value: T) {
+    pub fn write(&self, buffer: &mut Buffer, value: T) {
         let ReportFieldInner { offset, size } = self.inner.unwrap();
 
         let value = value.into().to_le_bytes();
-        bytes[offset..(offset + size)].copy_from_slice(&value[..size]);
+        buffer.body_mut()[offset..(offset + size)].copy_from_slice(&value[..size]);
     }
 }
 
@@ -103,5 +106,30 @@ where
 {
     fn add_assign(&mut self, rhs: usize) {
         self.inner.as_mut().unwrap().offset += rhs;
+    }
+}
+
+#[derive(Debug)]
+pub struct Buffer {
+    bytes: Vec<u8>,
+}
+
+impl Buffer {
+    pub fn new(info: &ReportInfo) -> Self {
+        let mut bytes = vec![0u8; 1 + info.bytes_len()];
+        bytes[0] = info.id;
+        Self { bytes }
+    }
+
+    fn body(&self) -> &[u8] {
+        &self.bytes[1..]
+    }
+
+    fn body_mut(&mut self) -> &mut [u8] {
+        &mut self.bytes[1..]
+    }
+
+    pub(super) fn as_mut(&mut self) -> &mut [u8] {
+        &mut self.bytes
     }
 }

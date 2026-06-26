@@ -17,8 +17,8 @@ use crate::{
         lamp_array_attrs::LampArrayAttrsReport, lamp_array_control::LampArrayControlReport,
         lamp_attrs_request::LampAttrsRequestReport, lamp_attrs_response::LampAttrsResponseReport,
         lamp_multi_update::LampMultiUpdateReport, lamp_range_update::LampRangeUpdateReport,
+        utils::info::ReportInfo,
     },
-    utils::info::ReportInfo,
 };
 
 pub mod lamp_array_attrs;
@@ -27,6 +27,7 @@ pub mod lamp_attrs_request;
 pub mod lamp_attrs_response;
 pub mod lamp_multi_update;
 pub mod lamp_range_update;
+pub mod utils;
 
 #[enum_dispatch]
 pub trait Report {
