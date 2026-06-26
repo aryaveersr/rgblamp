@@ -29,7 +29,13 @@ pub struct LampArray {
 impl LampArray {
     pub fn new(dev_name: impl Into<String>, reports: Reports) -> LampResult<Self> {
         let dev_name = dev_name.into();
-        let mut file = OpenOptions::new().read(true).write(true).open(&dev_name)?;
+
+        trace!("creating a new lamparray from /dev/{dev_name}");
+
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(&format!("/dev/{dev_name}"))?;
 
         let attrs = reports.lamp_array_attrs.get(&mut file)?;
         let mut lamps = Vec::with_capacity(attrs.lamp_count as usize);
