@@ -3,21 +3,27 @@ use crate::device::{hid_info::HidInfo, iter::DeviceIter};
 #[derive(clap::Args, Debug)]
 #[command(next_help_heading = "Device selectors")]
 pub struct DeviceArgs {
+    /// The path name for the device under /dev
     #[arg(long)]
     dev_name: Option<String>,
 
+    /// Device vendor id
     #[arg(long)]
     device_vendor: Option<u32>,
 
+    /// Device product id
     #[arg(long)]
     device_product: Option<u32>,
 
+    /// Device physical address
     #[arg(long)]
     device_phys: Option<String>,
 
+    /// Device unique address
     #[arg(long)]
     device_uniq: Option<String>,
 
+    /// Device name
     #[arg(long)]
     device_name: Option<String>,
 }
