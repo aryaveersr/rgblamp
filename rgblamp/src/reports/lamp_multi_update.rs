@@ -1,7 +1,8 @@
 use std::fs::File;
 
+use color::Rgba8;
+
 use crate::{
-    LampUpdateItem,
     error::LampResult,
     reports::{LampUpdateFlags, Report, ReportInfo},
     utils::{
@@ -121,4 +122,10 @@ impl Report for LampMultiUpdateReport {
 pub struct LampMultiUpdateParams<'a> {
     pub update_flags: LampUpdateFlags,
     pub items: &'a [LampUpdateItem],
+}
+
+#[derive(Debug)]
+pub struct LampUpdateItem {
+    pub lamp_id: u32,
+    pub color: Rgba8,
 }

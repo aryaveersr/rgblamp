@@ -8,21 +8,19 @@ use color::Rgba8;
 use log::{error, trace};
 
 use crate::{
+    LampUpdateBuilder,
     error::{Error, LampResult},
-    reports::{
-        LampUpdateFlags, Reports, lamp_multi_update::LampMultiUpdateParams,
-        lamp_range_update::LampRangeUpdateParams,
-    },
+    reports::{LampUpdateFlags, Reports, lamp_range_update::LampRangeUpdateParams},
 };
 
 #[derive(Debug)]
 pub struct LampArray {
-    dev_name: String,
-    file: File,
-    reports: Reports,
+    pub(crate) dev_name: String,
+    pub(crate) file: File,
+    pub(crate) reports: Reports,
 
     min_update_interval: Duration,
-    lamps: Vec<LampAttrs>,
+    pub(crate) lamps: Vec<LampAttrs>,
 }
 
 impl LampArray {
@@ -127,7 +125,7 @@ impl LampArray {
         )
     }
 
-    pub fn set_lamps_range(
+    pub fn set_lamp_range(
         &mut self,
         lamp_ids: RangeInclusive<u32>,
         color: Rgba8,
@@ -162,40 +160,10 @@ impl LampArray {
         )
     }
 
-    pub fn set_multiple_lamps(
-        &mut self,
-        items: &[LampUpdateItem],
-        is_last: bool,
-    ) -> LampResult<()> {
-        trace!("setting multiple lamps for {}", self.dev_name);
-        trace!("{items:?}");
-        trace!("is this is last in a batch: {is_last}");
+    pub fn builder(&mut self) -> LampResult<LampUpdateBuilder<'_>> {
+        trace!("creating builder for {}", self.dev_name);
 
-        for item in items {
-            if item.lamp_id >= self.lamps.len() as u32 {
-                error!(
-                    "lampid {} was invalid. number of lamps is {}",
-                    item.lamp_id,
-                    self.lamps.len()
-                );
-                return Err(Error::InvalidLampID);
-            }
-        }
-
-        let slots = self.reports.lamp_multi_update.slots() as usize;
-        let last_idx = items.len().div_ceil(slots) - 1;
-
-        for (idx, chunk) in items.chunks(slots).enumerate() {
-            self.reports.lamp_multi_update.send(
-                &mut self.file,
-                LampMultiUpdateParams {
-                    update_flags: LampUpdateFlags::new(is_last && last_idx == idx),
-                    items: chunk,
-                },
-            )?;
-        }
-
-        Ok(())
+        Ok(LampUpdateBuilder::new(self))
     }
 }
 
@@ -210,10 +178,4 @@ pub struct LampAttrs {
     pub green_level_count: u32,
     pub blue_level_count: u32,
     pub intensity_level_count: u32,
-}
-
-#[derive(Debug)]
-pub struct LampUpdateItem {
-    pub lamp_id: u32,
-    pub color: Rgba8,
 }
