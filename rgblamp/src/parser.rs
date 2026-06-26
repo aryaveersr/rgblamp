@@ -3,6 +3,7 @@
 use bilge::prelude::*;
 
 use crate::{
+    LampArray,
     error::{Error, LampResult},
     reports::{
         Report, ReportKind, Reports, lamp_array_attrs::LampArrayAttrsReport,
@@ -47,14 +48,14 @@ impl<'a> ReportDescriptorParser<'a> {
         }
     }
 
-    pub fn next(&mut self) -> LampResult<Option<Reports>> {
+    pub fn next(&mut self, dev_name: impl Into<String>) -> LampResult<Option<LampArray>> {
         while let Some((tag, data)) = self.consume_item()? {
             match tag.kind() {
                 ItemKind::Global => self.handle_global_item(tag.tag(), data)?,
                 ItemKind::Local => self.handle_local_item(tag.tag(), data)?,
                 ItemKind::Main => {
-                    if let Some(report) = self.handle_main_item(tag.tag())? {
-                        return Ok(Some(report));
+                    if let Some(reports) = self.handle_main_item(tag.tag())? {
+                        return Ok(Some(LampArray::new(dev_name, reports)?));
                     }
                 }
                 ItemKind::Reserved => return Err(Error::parser("reserved item kind")),

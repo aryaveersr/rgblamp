@@ -1,8 +1,6 @@
 use std::{
     fs::{File, OpenOptions},
     ops::RangeInclusive,
-    path::PathBuf,
-    str::FromStr,
     time::Duration,
 };
 
@@ -11,19 +9,16 @@ use log::{error, trace};
 
 use crate::{
     error::{Error, LampResult},
-    lamparray::device_info::DeviceInfo,
     reports::{
         LampUpdateFlags, Reports, lamp_multi_update::LampMultiUpdateParams,
         lamp_range_update::LampRangeUpdateParams,
     },
 };
 
-pub mod device_info;
-pub mod lamparrays;
-
 #[derive(Debug)]
 pub struct LampArray {
-    info: DeviceInfo,
+    // TODO: log this
+    dev_name: String,
     file: File,
     reports: Reports,
 
@@ -32,11 +27,9 @@ pub struct LampArray {
 }
 
 impl LampArray {
-    pub fn new(info: DeviceInfo, reports: Reports) -> LampResult<Self> {
-        let mut file = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .open(PathBuf::from_str("/dev").unwrap().join(&info.dev_name))?;
+    pub fn new(dev_name: impl Into<String>, reports: Reports) -> LampResult<Self> {
+        let dev_name = dev_name.into();
+        let mut file = OpenOptions::new().read(true).write(true).open(&dev_name)?;
 
         let attrs = reports.lamp_array_attrs.get(&mut file)?;
         let mut lamps = Vec::with_capacity(attrs.lamp_count as usize);
@@ -44,7 +37,7 @@ impl LampArray {
         trace!("Received LampArray attributes: {attrs:?}");
 
         if attrs.lamp_count == 0 {
-            error!("Device {} has no lamps", info.dev_name);
+            error!("Device has no lamps");
             return Err(Error::NoLamps);
         }
 
@@ -64,7 +57,7 @@ impl LampArray {
         }
 
         Ok(Self {
-            info,
+            dev_name,
             file,
             reports,
             min_update_interval: Duration::from_micros(attrs.min_update_interval_us as u64),
@@ -72,8 +65,8 @@ impl LampArray {
         })
     }
 
-    pub fn name(&self) -> &str {
-        &self.info.dev_name
+    pub fn dev_name(&self) -> &str {
+        &self.dev_name
     }
 
     pub fn min_update_interval(&self) -> Duration {
@@ -85,10 +78,7 @@ impl LampArray {
     }
 
     pub fn set_auto_mode(&mut self, auto_mode: bool) -> LampResult<()> {
-        trace!(
-            "Setting auto mode to '{auto_mode}' for device {}",
-            self.info.dev_name
-        );
+        trace!("Setting auto mode to '{auto_mode}'",);
 
         self.reports
             .lamp_array_control
@@ -96,10 +86,7 @@ impl LampArray {
     }
 
     pub fn set_lamp(&mut self, lamp_id: u32, color: Rgba8) -> LampResult<()> {
-        trace!(
-            "Setting lamp {lamp_id} to color '{color}' for device {}",
-            self.info.dev_name
-        );
+        trace!("Setting lamp {lamp_id} to color '{color}'",);
 
         if lamp_id >= self.lamps.len() as u32 {
             error!("Lamp id {lamp_id} was invalid (out of range)");
@@ -117,10 +104,7 @@ impl LampArray {
     }
 
     pub fn set_all_lamps(&mut self, color: Rgba8) -> LampResult<()> {
-        trace!(
-            "Setting all lamps to color '{color}' for device {}",
-            self.info.dev_name
-        );
+        trace!("Setting all lamps to color '{color}'");
 
         self.reports.lamp_range_update.send(
             &mut self.file,
@@ -138,10 +122,7 @@ impl LampArray {
         color: Rgba8,
         is_last: bool,
     ) -> LampResult<()> {
-        trace!(
-            "Setting all lamps in range {lamp_ids:?} to color '{color}' for device {}",
-            self.info.dev_name
-        );
+        trace!("Setting all lamps in range {lamp_ids:?} to color '{color}'");
         trace!("Is this is last in a batch: {is_last}");
 
         if *lamp_ids.end() >= self.lamps.len() as u32 {
@@ -169,7 +150,7 @@ impl LampArray {
         items: &[LampUpdateItem],
         is_last: bool,
     ) -> LampResult<()> {
-        trace!("Setting multiple lamps for device {}", self.info.dev_name);
+        trace!("Setting multiple lamps");
         trace!("{items:?}");
         trace!("Is this is last in a batch: {is_last}");
 

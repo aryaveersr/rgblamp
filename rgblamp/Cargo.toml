@@ -4,14 +4,14 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bilge = "0.3.0"
 enum_dispatch = "0.3.13"
 nix = { version = "0.31.3", features = ["ioctl"] }
-serde = { version = "1.0.228", features = ["derive"], optional = true }
 thiserror = "2.0.18"
 
+bilge.workspace = true
 color.workspace = true
 log.workspace = true
+serde = { workspace = true, features = ["derive"], optional = true }
 
 [features]
 serde = ["dep:serde"]

@@ -1,14 +1,13 @@
 use std::io::stdout;
 
-use anyhow::ensure;
-use clap::Args;
-use rgblamp::{LampArray, LampAttrs, lamparrays::LampArrays};
+use rgblamp::{LampArray, LampAttrs};
 
-#[derive(Args, Debug)]
+use crate::device::{DeviceArgs, HidInfo};
+
+#[derive(clap::Args, Debug)]
 pub struct ListCommand {
-    /// List lamps for a specific device only.
-    #[arg(short, long = "device")]
-    device_id: Option<usize>,
+    #[command(flatten)]
+    device: DeviceArgs,
 
     /// Output as JSON.
     #[arg(short, long)]
@@ -17,46 +16,38 @@ pub struct ListCommand {
 
 impl ListCommand {
     pub fn exec(&self) -> anyhow::Result<()> {
-        let devices = LampArrays::new()?;
+        let devices = self.device.iter()?;
 
-        if let Some(device_id) = self.device_id {
-            ensure!(device_id < devices.len(), "device id out of range");
+        if self.json {
+            let value = devices
+                .map(|d| d.map(|d| self.json_device(d)))
+                .collect::<anyhow::Result<Vec<_>>>()?;
 
-            if self.json {
-                let mut handle = stdout().lock();
-                serde_json::to_writer(&mut handle, &self.json_device(&devices[device_id]))?;
-            } else {
-                self.list_device(&devices[device_id]);
-            }
+            let mut handle = stdout().lock();
+            serde_json::to_writer(&mut handle, &value)?;
         } else {
-            if self.json {
-                let mut handle = stdout().lock();
-                let value: Vec<_> = devices.iter().map(|d| self.json_device(d)).collect();
-
-                serde_json::to_writer(&mut handle, &value)?;
-            } else {
-                for (i, device) in devices.iter().enumerate() {
-                    self.list_device(device);
-                    if i + 1 != devices.len() {
-                        println!();
-                    }
-                }
+            for device in devices {
+                self.list_device(device?);
             }
         }
 
         Ok(())
     }
 
-    fn json_device(&self, device: &LampArray) -> serde_json::Value {
+    fn json_device(&self, (info, device): (HidInfo, LampArray)) -> serde_json::Value {
         serde_json::json!({
-            "name": &device.name(),
+            "dev_name": device.dev_name(),
+            "hid_info": info,
             "min_update_interval": &device.min_update_interval(),
             "lamps": device.lamps()
         })
     }
 
-    fn list_device(&self, device: &LampArray) {
-        println!("Device {}:", device.name());
+    fn list_device(&self, (info, device): (HidInfo, LampArray)) {
+        println!("Device:");
+        println!("  Dev name: {}", device.dev_name());
+        println!("  Vendor: {}", info.id.vendor);
+        println!("  Product: {}", info.id.product);
         println!("  Number of lamps: {}", device.lamps().len());
         println!(
             "  Minimum interval between updates: {:?}",

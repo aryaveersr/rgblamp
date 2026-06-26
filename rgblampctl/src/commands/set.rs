@@ -1,49 +1,40 @@
 use anyhow::{Context, ensure};
-use clap::Args;
 use color::{Srgb, parse_color};
-use rgblamp::lamparrays::LampArrays;
 
-#[derive(Args, Debug)]
+use crate::device::DeviceArgs;
+
+#[derive(clap::Args, Debug)]
 pub struct SetCommand {
     /// Color as any value supported by CSS (hex, rgb(), named values, etc.)
     color: String,
 
-    /// Limit the change to a specific device
-    #[arg(short, long = "device")]
-    device_id: Option<usize>,
-
-    /// Set the color of a specific lamp. Requires device id if there are multiple devices
+    /// Set the color of a specific lamp.
     #[arg(short, long = "lamp")]
     lamp_id: Option<u32>,
+
+    #[command(flatten)]
+    device: DeviceArgs,
 }
 
 impl SetCommand {
     pub fn exec(&self) -> anyhow::Result<()> {
-        let mut devices = LampArrays::new()?;
-
-        ensure!(!devices.is_empty(), "no devices found.");
-
+        let mut devices = self.device.iter()?.peekable();
         let color = parse_color(&self.color)
             .map(|c| c.to_alpha_color::<Srgb>().to_rgba8())
             .context("invalid color")?;
 
-        match (self.device_id, self.lamp_id) {
-            (None, None) => {
-                for device in devices.iter_mut() {
+        ensure!(devices.peek().is_some(), "no devices found");
+
+        for device in devices {
+            let (_, mut device) = device?;
+
+            match self.lamp_id {
+                Some(lamp_id) => {
+                    device.set_lamp(lamp_id, color)?;
+                }
+                None => {
                     device.set_all_lamps(color)?;
                 }
-            }
-            (None, Some(lamp_id)) => {
-                ensure!(devices.len() == 1, "multiple devices found, need device id");
-                devices[0].set_lamp(lamp_id, color)?;
-            }
-            (Some(device_id), None) => {
-                ensure!(device_id < devices.len(), "device id out of range");
-                devices[device_id].set_all_lamps(color)?;
-            }
-            (Some(device_id), Some(lamp_id)) => {
-                ensure!(device_id < devices.len(), "device id out of range");
-                devices[device_id].set_lamp(lamp_id, color)?;
             }
         }
 

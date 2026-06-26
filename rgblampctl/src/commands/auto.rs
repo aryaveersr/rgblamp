@@ -1,19 +1,18 @@
 use anyhow::ensure;
-use clap::{Args, ValueEnum};
-use rgblamp::lamparrays::LampArrays;
 
-#[derive(Args, Debug)]
+use crate::device::DeviceArgs;
+
+#[derive(clap::Args, Debug)]
 pub struct AutoCommand {
     /// Turn auto mode on/off
     #[arg(value_enum)]
     value: Switch,
 
-    /// Limit the change to a specific device
-    #[arg(short, long = "device")]
-    device_id: Option<usize>,
+    #[command(flatten)]
+    device: DeviceArgs,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+#[derive(clap::ValueEnum, Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum Switch {
     On,
     Off,
@@ -21,21 +20,14 @@ enum Switch {
 
 impl AutoCommand {
     pub fn exec(&self) -> anyhow::Result<()> {
-        let mut devices = LampArrays::new()?;
+        let mut devices = self.device.iter()?.peekable();
         let auto_mode = self.value == Switch::On;
 
-        ensure!(!devices.is_empty(), "no devices found.");
+        ensure!(devices.peek().is_some(), "no devices found");
 
-        match self.device_id {
-            Some(device_id) => {
-                ensure!(device_id < devices.len(), "device id out of range");
-                devices[device_id].set_auto_mode(auto_mode)?;
-            }
-            None => {
-                for device in devices.iter_mut() {
-                    device.set_auto_mode(auto_mode)?;
-                }
-            }
+        for device in devices {
+            let (_, mut device) = device?;
+            device.set_auto_mode(auto_mode)?;
         }
 
         Ok(())

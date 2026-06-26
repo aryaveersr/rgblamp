@@ -5,9 +5,10 @@ use log::trace;
 use crate::commands::Commands;
 
 mod commands;
+mod device;
 
 /// Control HID LampArray devices on Linux.
-#[derive(Parser, Debug)]
+#[derive(clap::Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
     #[command(subcommand)]

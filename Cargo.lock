@@ -454,12 +454,14 @@ name = "rgblampctl"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bilge",
  "clap",
  "clap-verbosity-flag",
  "color",
  "env_logger",
  "log",
  "rgblamp",
+ "serde",
  "serde_json",
 ]
 

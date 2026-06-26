@@ -27,7 +27,6 @@ pub mod lamp_attrs_request;
 pub mod lamp_attrs_response;
 pub mod lamp_multi_update;
 pub mod lamp_range_update;
-pub mod parser;
 
 #[enum_dispatch]
 pub trait Report {

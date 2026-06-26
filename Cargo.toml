@@ -4,5 +4,7 @@ members = ["rgblamp/", "rgblampctl/"]
 default-members = ["rgblamp/", "rgblampctl/"]
 
 [workspace.dependencies]
+bilge = "0.3.0"
 color = "0.3.3"
 log = "0.4.33"
+serde = "1.0.228"
