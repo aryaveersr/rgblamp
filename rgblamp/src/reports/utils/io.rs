@@ -15,7 +15,7 @@ pub fn get_feature(file: &mut File, info: &ReportInfo) -> LampResult<Buffer> {
     let mut buffer = Buffer::new(info);
 
     unsafe {
-        ioctl::hid_get_feature(file.as_raw_fd(), &mut buffer.as_mut())?;
+        ioctl::hid_get_feature(file.as_raw_fd(), buffer.as_mut())?;
     }
 
     Ok(buffer)
