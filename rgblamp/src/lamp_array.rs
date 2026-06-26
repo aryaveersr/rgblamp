@@ -17,7 +17,6 @@ use crate::{
 
 #[derive(Debug)]
 pub struct LampArray {
-    // TODO: log this
     dev_name: String,
     file: File,
     reports: Reports,
@@ -40,7 +39,7 @@ impl LampArray {
         let attrs = reports.lamp_array_attrs.get(&mut file)?;
         let mut lamps = Vec::with_capacity(attrs.lamp_count as usize);
 
-        trace!("Received LampArray attributes: {attrs:?}");
+        trace!("received lamparray attributes: {attrs:?}");
 
         if attrs.lamp_count == 0 {
             error!("Device has no lamps");
@@ -51,11 +50,11 @@ impl LampArray {
         for lamp_id in 0..attrs.lamp_count {
             let attrs = reports.lamp_attrs_response.get(&mut file)?;
 
-            trace!("Received Lamp attributes for lamp {lamp_id}: {attrs:?}");
+            trace!("received lamp attributes for lamp {lamp_id}: {attrs:?}");
 
             if !attrs.programmable {
                 // TODO
-                error!("Lamp {lamp_id} is not programmable");
+                error!("lamp {lamp_id} is not programmable");
                 return Err(Error::unsupported("non-programmable lamp"));
             }
 
@@ -84,7 +83,7 @@ impl LampArray {
     }
 
     pub fn set_auto_mode(&mut self, auto_mode: bool) -> LampResult<()> {
-        trace!("Setting auto mode to '{auto_mode}'",);
+        trace!("setting auto mode to '{auto_mode}' for {}", self.dev_name);
 
         self.reports
             .lamp_array_control
@@ -92,10 +91,16 @@ impl LampArray {
     }
 
     pub fn set_lamp(&mut self, lamp_id: u32, color: Rgba8) -> LampResult<()> {
-        trace!("Setting lamp {lamp_id} to color '{color}'",);
+        trace!(
+            "setting lamp {lamp_id} to color '{color}' for {}",
+            self.dev_name
+        );
 
         if lamp_id >= self.lamps.len() as u32 {
-            error!("Lamp id {lamp_id} was invalid (out of range)");
+            error!(
+                "lampid {lamp_id} was invalid. number of lamps is {}",
+                self.lamps.len()
+            );
             return Err(Error::InvalidLampID);
         }
 
@@ -110,7 +115,7 @@ impl LampArray {
     }
 
     pub fn set_all_lamps(&mut self, color: Rgba8) -> LampResult<()> {
-        trace!("Setting all lamps to color '{color}'");
+        trace!("setting all lamps to color '{color}' for {}", self.dev_name);
 
         self.reports.lamp_range_update.send(
             &mut self.file,
@@ -128,16 +133,22 @@ impl LampArray {
         color: Rgba8,
         is_last: bool,
     ) -> LampResult<()> {
-        trace!("Setting all lamps in range {lamp_ids:?} to color '{color}'");
-        trace!("Is this is last in a batch: {is_last}");
+        trace!(
+            "setting all lamps in range {lamp_ids:?} to color '{color}' for {}",
+            self.dev_name
+        );
+        trace!("is this is last in a batch: {is_last}");
 
         if *lamp_ids.end() >= self.lamps.len() as u32 {
-            error!("One or more lamp ids in range {lamp_ids:?} is invalid");
+            error!(
+                "lampid range '{lamp_ids:?}' was invalid. number of lamps is {}",
+                self.lamps.len()
+            );
             return Err(Error::InvalidLampID);
         }
 
         if lamp_ids.is_empty() {
-            error!("Lamp id range {lamp_ids:?} is empty");
+            error!("lampid range {lamp_ids:?} is empty");
             return Err(Error::EmptyLampIDRange);
         }
 
@@ -156,13 +167,17 @@ impl LampArray {
         items: &[LampUpdateItem],
         is_last: bool,
     ) -> LampResult<()> {
-        trace!("Setting multiple lamps");
+        trace!("setting multiple lamps for {}", self.dev_name);
         trace!("{items:?}");
-        trace!("Is this is last in a batch: {is_last}");
+        trace!("is this is last in a batch: {is_last}");
 
         for item in items {
             if item.lamp_id >= self.lamps.len() as u32 {
-                error!("Lamp id {} was invalid (out of range)", item.lamp_id);
+                error!(
+                    "lampid {} was invalid. number of lamps is {}",
+                    item.lamp_id,
+                    self.lamps.len()
+                );
                 return Err(Error::InvalidLampID);
             }
         }
