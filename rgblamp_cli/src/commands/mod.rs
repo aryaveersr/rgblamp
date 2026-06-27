@@ -1,15 +1,13 @@
-use clap::Subcommand;
-
 use crate::commands::{
-    auto::AutoCommand, effects::EffectsCommand, list::ListCommand, set::SetCommand,
+    auto::AutoCommand, effect::EffectCommand, list::ListCommand, set::SetCommand,
 };
 
 mod auto;
-mod effects;
+mod effect;
 mod list;
 mod set;
 
-#[derive(Subcommand, Debug)]
+#[derive(clap::Subcommand, Debug)]
 pub enum Commands {
     /// Set lamp(s) to a specific color
     Set(SetCommand),
@@ -21,5 +19,5 @@ pub enum Commands {
     Auto(AutoCommand),
 
     /// Run RGB effects
-    Effects(EffectsCommand),
+    Effect(EffectCommand),
 }
