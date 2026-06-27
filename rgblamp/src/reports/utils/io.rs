@@ -2,7 +2,7 @@ use std::{fs::File, os::fd::AsRawFd};
 
 use crate::{
     error::LampResult,
-    reports::utils::{field::Buffer, info::ReportInfo},
+    reports::utils::{buffer::Buffer, info::ReportInfo},
 };
 
 mod ioctl {

@@ -2,7 +2,7 @@ use std::{fmt::Debug, marker::PhantomData, ops::AddAssign};
 
 use crate::{
     error::{Error, LampResult},
-    reports::utils::info::ReportInfo,
+    reports::utils::buffer::Buffer,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -106,30 +106,5 @@ where
 {
     fn add_assign(&mut self, rhs: usize) {
         self.inner.as_mut().unwrap().offset += rhs;
-    }
-}
-
-#[derive(Debug)]
-pub struct Buffer {
-    bytes: Vec<u8>,
-}
-
-impl Buffer {
-    pub fn new(info: &ReportInfo) -> Self {
-        let mut bytes = vec![0u8; 1 + info.bytes_len()];
-        bytes[0] = info.id;
-        Self { bytes }
-    }
-
-    fn body(&self) -> &[u8] {
-        &self.bytes[1..]
-    }
-
-    fn body_mut(&mut self) -> &mut [u8] {
-        &mut self.bytes[1..]
-    }
-
-    pub(super) fn as_mut(&mut self) -> &mut [u8] {
-        &mut self.bytes
     }
 }

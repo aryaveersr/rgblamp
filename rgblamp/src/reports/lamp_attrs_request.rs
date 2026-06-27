@@ -4,11 +4,7 @@ use crate::{
     error::LampResult,
     reports::{
         Report, ReportInfo,
-        utils::{
-            field::{Buffer, ReportField},
-            io::set_feature,
-            usage,
-        },
+        utils::{buffer::Buffer, field::ReportField, io::set_feature, usage},
     },
 };
 
