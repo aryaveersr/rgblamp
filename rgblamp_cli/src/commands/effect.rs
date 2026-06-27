@@ -1,9 +1,15 @@
+use std::time::Duration;
+
 use color::palette::css;
+use rgblamp::LampArray;
 
 use crate::device::DeviceArgs;
 
 #[derive(clap::Args, Debug)]
 pub struct EffectCommand {
+    #[command(flatten)]
+    device: DeviceArgs,
+
     #[command(subcommand)]
     effect: Effect,
 }
@@ -15,21 +21,7 @@ pub enum Effect {
 
 impl EffectCommand {
     pub fn exec(&self) -> anyhow::Result<()> {
-        match &self.effect {
-            Effect::Rainbow(rainbow) => rainbow.run(),
-        }
-    }
-}
-
-#[derive(clap::Args, Debug)]
-pub struct Rainbow {
-    #[command(flatten)]
-    device: DeviceArgs,
-}
-
-impl Rainbow {
-    pub fn run(&self) -> anyhow::Result<()> {
-        let mut devices = self
+        let devices = self
             .device
             .iter()?
             .map(|d| d.map(|(_, d)| d))
@@ -41,6 +33,21 @@ impl Rainbow {
             .max()
             .unwrap();
 
+        match &self.effect {
+            Effect::Rainbow(rainbow) => rainbow.run(devices, sleep_duration),
+        }
+    }
+}
+
+#[derive(clap::Args, Debug)]
+pub struct Rainbow {
+    /// Speed. Negative values reverse the effect. Can be fractional
+    #[arg(long, default_value_t = 1.0)]
+    speed: f32,
+}
+
+impl Rainbow {
+    pub fn run(&self, mut devices: Vec<LampArray>, sleep_duration: Duration) -> anyhow::Result<()> {
         for device in &mut devices {
             device.set_auto_mode(false)?;
         }
@@ -53,7 +60,7 @@ impl Rainbow {
             }
 
             color = color.map_hue(|mut hue| {
-                hue += 2.0;
+                hue += self.speed;
                 if hue >= 360.0 {
                     hue = 0.0;
                 }
