@@ -1,8 +1,11 @@
 use clap::Subcommand;
 
-use crate::commands::{auto::AutoCommand, list::ListCommand, set::SetCommand};
+use crate::commands::{
+    auto::AutoCommand, effects::EffectsCommand, list::ListCommand, set::SetCommand,
+};
 
 mod auto;
+mod effects;
 mod list;
 mod set;
 
@@ -16,4 +19,7 @@ pub enum Commands {
 
     /// Turn auto mode on or off for device(s)
     Auto(AutoCommand),
+
+    /// Run RGB effects
+    Effects(EffectsCommand),
 }

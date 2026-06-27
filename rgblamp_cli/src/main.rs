@@ -6,6 +6,7 @@ use crate::commands::Commands;
 
 mod commands;
 mod device;
+mod effects;
 
 /// Control HID LampArray devices on Linux.
 #[derive(clap::Parser, Debug)]
@@ -30,5 +31,6 @@ fn main() -> anyhow::Result<()> {
         Commands::Set(set_command) => set_command.exec(),
         Commands::List(list_command) => list_command.exec(),
         Commands::Auto(auto_command) => auto_command.exec(),
+        Commands::Effects(effects_command) => effects_command.exec(),
     }
 }
