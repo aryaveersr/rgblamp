@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use color::palette::css;
+use log::error;
 use rgblamp::LampArray;
 
 use crate::device::DeviceArgs;
@@ -42,8 +43,12 @@ impl EffectCommand {
 #[derive(clap::Args, Debug)]
 pub struct Rainbow {
     /// Speed. Negative values reverse the effect. Can be fractional
-    #[arg(long, default_value_t = 1.0)]
+    #[arg(short, long, default_value_t = 1.0)]
     speed: f32,
+
+    /// Retry if IO fails. Recommended in case of frequent crashes
+    #[arg(short, long)]
+    retry: bool,
 }
 
 impl Rainbow {
@@ -56,7 +61,13 @@ impl Rainbow {
 
         loop {
             for device in &mut devices {
-                device.set_all_lamps(color.to_rgba8())?;
+                if let Err(err) = device.set_all_lamps(color.to_rgba8()) {
+                    if self.retry {
+                        error!("{err}");
+                    } else {
+                        Err(err)?;
+                    }
+                }
             }
 
             color = color.map_hue(|mut hue| {
