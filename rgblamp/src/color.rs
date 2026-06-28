@@ -1,5 +1,8 @@
 use std::fmt::Display;
 
+/// Packed representation of a color consisting of 8-bit channels.
+///
+/// Interop with other color crates can be enabled using [feature flags](https://docs.rs/crate/rgblamp/latest/features).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Color {
     pub r: u8,
@@ -14,6 +17,13 @@ impl Color {
     pub const GREEN: Self = Self::new(0, 255, 0, 255);
     pub const BLUE: Self = Self::new(0, 0, 255, 255);
 
+    /// Create a new color struct.
+    /// # Example
+    ///
+    /// ```
+    /// # use rgblamp::Color;
+    /// let yellow = Color::new(255, 255, 0, 255);
+    /// ```
     pub const fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self { r, g, b, a }
     }

@@ -9,20 +9,34 @@ license = "MIT"
 keywords = ["lamparray", "linux", "rgb"]
 categories = ["hardware-support"]
 
+[package.metadata.docs.rs]
+all-features = true
+
 [dependencies]
 enum_dispatch = "0.3.13"
 nix = { version = "0.31.3", features = ["ioctl"] }
 thiserror = "2.0.18"
 
 bilge.workspace = true
-color = { workspace = true, optional = true }
 log.workspace = true
-palette = { version = "0.7.6", optional = true }
-rgb = { version = "0.8.53", optional = true }
+
 serde = { workspace = true, features = ["derive"], optional = true }
 
+color = { workspace = true, optional = true }
+palette = { version = "0.7.6", optional = true }
+rgb = { version = "0.8.53", optional = true }
+
+document-features = { version = "0.2", optional = true }
+
 [features]
+## Enable interop with the [color](https://crates.io/crates/color) crate.
 color-impl = ["dep:color"]
+## Enable interop with the [palette](https://crates.io/crates/palette) crate.
 palette-impl = ["dep:palette"]
+## Enable interop with the [rgb](https://crates.io/crates/rgb) crate.
 rgb-impl = ["dep:rgb"]
+
+## Enable serde implementations on exported structures.
 serde = ["dep:serde"]
+
+document-features = ["dep:document-features"]

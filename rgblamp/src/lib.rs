@@ -1,4 +1,9 @@
 #![doc = include_str!("../README.md")]
+#![cfg_attr(feature = "document-features", doc = "## Feature Flags")]
+#![cfg_attr(
+    feature = "document-features",
+    cfg_attr(doc, doc = ::document_features::document_features!())
+)]
 
 mod builder;
 mod color;
