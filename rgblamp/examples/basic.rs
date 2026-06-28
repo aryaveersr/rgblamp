@@ -1,8 +1,6 @@
-use std::error::Error;
-
 use rgblamp::Color;
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Enumerate all available devices.
     let mut devices = rgblamp::enumerate()?;
 

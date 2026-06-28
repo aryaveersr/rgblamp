@@ -1,8 +1,8 @@
-use std::{error::Error, fs};
+use std::fs;
 
 use rgblamp::{Color, ReportDescriptorParser};
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut devices = Vec::new();
 
     // Scan the `/sys/class/hidraw` directory for lamparray devices.
