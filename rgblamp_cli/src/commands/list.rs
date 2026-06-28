@@ -26,8 +26,8 @@ impl ListCommand {
             let mut handle = stdout().lock();
             serde_json::to_writer(&mut handle, &value)?;
         } else {
-            for device in devices {
-                self.list_device(device?);
+            for (i, device) in devices.enumerate() {
+                self.list_device(i, device?);
             }
         }
 
@@ -43,8 +43,8 @@ impl ListCommand {
         })
     }
 
-    fn list_device(&self, (info, device): (HidInfo, LampArray)) {
-        println!("Device:");
+    fn list_device(&self, i: usize, (info, device): (HidInfo, LampArray)) {
+        println!("Device {i}:");
         println!("  Dev name: {}", device.dev_name());
         println!("  Vendor: {}", info.id.vendor);
         println!("  Product: {}", info.id.product);
