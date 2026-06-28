@@ -20,28 +20,11 @@ For instructions on how to setup permissions, refer to the [workspace README](ht
 ## Examples
 
 ```rust
-use std::{error::Error, fs};
-
-use rgblamp::ReportDescriptorParser;
+use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let mut devices = Vec::new();
-
-    // Scan the `/sys/class/hidraw` directory for lamparray devices.
-    // You can filter devices according to their properties such as vendor and product ids here.
-    for entry in fs::read_dir("/sys/class/hidraw")? {
-        let entry = entry?;
-
-        let file_name = entry.file_name();
-        let dev_name = file_name.to_str().unwrap().to_owned();
-
-        let contents = fs::read(entry.path().join("device/report_descriptor"))?;
-        let mut parser = ReportDescriptorParser::new(&contents);
-
-        while let Some(device) = parser.next(&dev_name)? {
-            devices.push(device);
-        }
-    }
+    // Enumerate all available devices.
+    let mut devices = rgblamp::enumerate()?;
 
     // Print devnames for all devices.
     for device in &devices {

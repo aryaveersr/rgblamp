@@ -13,14 +13,17 @@ use crate::{
 ///
 /// # Example
 ///
-/// ```ignore
+/// ```
+/// # use color::palette::css::{RED, GREEN, BLUE};
+/// # let lamparray = &mut rgblamp::enumerate()?[0];
 /// let mut builder = lamparray.builder();
 ///
-/// builder.set(0, RED);
-/// builder.set(1, GREEN);
-/// builder.set(2, BLUE);
+/// builder.set(0, RED.to_rgba8());
+/// builder.set(1, GREEN.to_rgba8());
+/// builder.set(2, BLUE.to_rgba8());
 ///
 /// builder.finish(true);
+/// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
 #[derive(Debug)]
 pub struct LampUpdateBuilder<'a> {

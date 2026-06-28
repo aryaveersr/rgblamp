@@ -22,19 +22,15 @@ use crate::{
 };
 
 /// A LampArray device. A single physical device can expose multiple LampArray devices.
-/// Use [`crate::ReportDescriptorParser`] to create new instances of this struct.
+/// Use [`crate::enumerate`] to find all lamparray devices or use [`crate::ReportDescriptorParser`] to manually create new instances of this struct.
 ///
 /// # Example
 ///
-/// ```no_run
-/// # use rgblamp::ReportDescriptorParser;
-/// # let contents = vec![0u8];
-///
-/// let mut parser = ReportDescriptorParser::new(&contents);
-/// if let Some(mut lamparray) = parser.next("hidraw0")? {
+/// ```
+/// let mut devices = rgblamp::enumerate()?;
+/// for lamparray in &mut devices {
 ///     lamparray.set_auto_mode(false);
 /// }
-///
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
 #[derive(Debug)]
@@ -48,50 +44,6 @@ pub struct LampArray {
 }
 
 impl LampArray {
-    pub(crate) fn new(dev_name: impl Into<String>, reports: Reports) -> crate::Result<Self> {
-        let dev_name = dev_name.into();
-
-        trace!("creating a new lamparray from /dev/{dev_name}");
-
-        let mut file = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .open(format!("/dev/{dev_name}"))?;
-
-        let attrs = reports.lamp_array_attrs.get(&mut file)?;
-        let mut lamps = Vec::with_capacity(attrs.lamp_count as usize);
-
-        trace!("received lamparray attributes: {attrs:?}");
-
-        if attrs.lamp_count == 0 {
-            error!("Device has no lamps");
-            return Err(Error::NoLamps);
-        }
-
-        reports.lamp_attrs_request.send(&mut file, 0)?;
-        for lamp_id in 0..attrs.lamp_count {
-            let attrs = reports.lamp_attrs_response.get(&mut file)?;
-
-            trace!("received lamp attributes for lamp {lamp_id}: {attrs:?}");
-
-            if !attrs.programmable {
-                // TODO
-                error!("lamp {lamp_id} is not programmable");
-                return Err(Error::unsupported("non-programmable lamp"));
-            }
-
-            lamps.push(attrs);
-        }
-
-        Ok(Self {
-            dev_name,
-            file,
-            reports,
-            min_update_interval: Duration::from_micros(attrs.min_update_interval_us as u64),
-            lamps,
-        })
-    }
-
     /// The dev name of the device of this lamparray.
     pub fn dev_name(&self) -> &str {
         &self.dev_name
@@ -211,6 +163,50 @@ impl LampArray {
         trace!("creating builder for {}", self.dev_name);
 
         LampUpdateBuilder::new(self)
+    }
+
+    pub(crate) fn new(dev_name: impl Into<String>, reports: Reports) -> crate::Result<Self> {
+        let dev_name = dev_name.into();
+
+        trace!("creating a new lamparray from /dev/{dev_name}");
+
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(format!("/dev/{dev_name}"))?;
+
+        let attrs = reports.lamp_array_attrs.get(&mut file)?;
+        let mut lamps = Vec::with_capacity(attrs.lamp_count as usize);
+
+        trace!("received lamparray attributes: {attrs:?}");
+
+        if attrs.lamp_count == 0 {
+            error!("Device has no lamps");
+            return Err(Error::NoLamps);
+        }
+
+        reports.lamp_attrs_request.send(&mut file, 0)?;
+        for lamp_id in 0..attrs.lamp_count {
+            let attrs = reports.lamp_attrs_response.get(&mut file)?;
+
+            trace!("received lamp attributes for lamp {lamp_id}: {attrs:?}");
+
+            if !attrs.programmable {
+                // TODO
+                error!("lamp {lamp_id} is not programmable");
+                return Err(Error::unsupported("non-programmable lamp"));
+            }
+
+            lamps.push(attrs);
+        }
+
+        Ok(Self {
+            dev_name,
+            file,
+            reports,
+            min_update_interval: Duration::from_micros(attrs.min_update_interval_us as u64),
+            lamps,
+        })
     }
 }
 

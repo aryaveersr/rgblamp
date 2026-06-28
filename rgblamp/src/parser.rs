@@ -21,12 +21,10 @@ use crate::{
 /// ```no_run
 /// # use rgblamp::ReportDescriptorParser;
 /// # let contents = vec![0u8];
-///
 /// let mut parser = ReportDescriptorParser::new(&contents);
 /// if let Some(lamparray) = parser.next("hidraw0")? {
 ///     // Do something
 /// }
-///
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
 #[derive(Default)]
