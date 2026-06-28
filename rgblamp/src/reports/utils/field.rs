@@ -1,9 +1,6 @@
 use std::{fmt::Debug, marker::PhantomData, ops::AddAssign};
 
-use crate::{
-    error::{Error, LampResult},
-    reports::utils::buffer::Buffer,
-};
+use crate::{error::Error, reports::utils::buffer::Buffer};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct ReportFieldInner {
@@ -42,7 +39,7 @@ where
     T: TryFrom<u32>,
     <T as TryFrom<u32>>::Error: Debug,
 {
-    pub fn set(&mut self, (offset_bits, size_bits): (u32, u32)) -> LampResult<()> {
+    pub fn set(&mut self, (offset_bits, size_bits): (u32, u32)) -> crate::Result<()> {
         if !offset_bits.is_multiple_of(8) || !size_bits.is_multiple_of(8) {
             // TODO
             return Err(Error::unsupported("only byte aligned fields are supported"));
@@ -63,7 +60,7 @@ where
         Ok(())
     }
 
-    pub fn set_if_none(&mut self, args: (u32, u32)) -> LampResult<()> {
+    pub fn set_if_none(&mut self, args: (u32, u32)) -> crate::Result<()> {
         if self.inner.is_none() {
             self.set(args)?;
         }
@@ -75,7 +72,7 @@ where
         self.inner.unwrap().size
     }
 
-    pub fn validate(&self, usage: &'static str) -> LampResult<()> {
+    pub fn validate(&self, usage: &'static str) -> crate::Result<()> {
         match self.inner {
             Some(_) => Ok(()),
             None => Err(Error::parser(format!("missing usage for {usage}"))),

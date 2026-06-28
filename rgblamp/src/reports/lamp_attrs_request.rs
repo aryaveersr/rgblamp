@@ -1,11 +1,8 @@
 use std::fs::File;
 
-use crate::{
-    error::LampResult,
-    reports::{
-        Report, ReportInfo,
-        utils::{buffer::Buffer, field::ReportField, io::set_feature, usage},
-    },
+use crate::reports::{
+    Report, ReportInfo,
+    utils::{buffer::Buffer, field::ReportField, io::set_feature, usage},
 };
 
 #[derive(Debug, Default)]
@@ -16,7 +13,7 @@ pub struct LampAttrsRequestReport {
 }
 
 impl Report for LampAttrsRequestReport {
-    fn register(&mut self, usages: &[u16], size: u32) -> LampResult<()> {
+    fn register(&mut self, usages: &[u16], size: u32) -> crate::Result<()> {
         for usage in usages {
             let args = self.info.increment(size);
             if *usage == usage::LAMP_ID {
@@ -27,7 +24,7 @@ impl Report for LampAttrsRequestReport {
         Ok(())
     }
 
-    fn validate(&self) -> LampResult<()> {
+    fn validate(&self) -> crate::Result<()> {
         self.info.validate()?;
 
         self.lamp_id.validate("LAMP_ID")?;
@@ -43,7 +40,7 @@ impl LampAttrsRequestReport {
         }
     }
 
-    pub fn send(&self, file: &mut File, lamp_id: u32) -> LampResult<()> {
+    pub fn send(&self, file: &mut File, lamp_id: u32) -> crate::Result<()> {
         let mut buffer = Buffer::new(&self.info);
 
         self.lamp_id.write(&mut buffer, lamp_id);

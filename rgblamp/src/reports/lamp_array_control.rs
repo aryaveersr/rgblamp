@@ -1,11 +1,8 @@
 use std::fs::File;
 
-use crate::{
-    error::LampResult,
-    reports::{
-        Report, ReportInfo,
-        utils::{buffer::Buffer, field::ReportField, io::set_feature, usage},
-    },
+use crate::reports::{
+    Report, ReportInfo,
+    utils::{buffer::Buffer, field::ReportField, io::set_feature, usage},
 };
 
 #[derive(Debug, Default)]
@@ -15,7 +12,7 @@ pub struct LampArrayControlReport {
 }
 
 impl Report for LampArrayControlReport {
-    fn register(&mut self, usages: &[u16], size: u32) -> LampResult<()> {
+    fn register(&mut self, usages: &[u16], size: u32) -> crate::Result<()> {
         for usage in usages {
             let args = self.info.increment(size);
             if *usage == usage::AUTONOMOUS_MODE {
@@ -26,7 +23,7 @@ impl Report for LampArrayControlReport {
         Ok(())
     }
 
-    fn validate(&self) -> LampResult<()> {
+    fn validate(&self) -> crate::Result<()> {
         self.info.validate()?;
 
         self.auto_mode.validate("AUTONOMOUS_MODE")?;
@@ -42,7 +39,7 @@ impl LampArrayControlReport {
         }
     }
 
-    pub fn send(&self, file: &mut File, auto_mode: bool) -> LampResult<()> {
+    pub fn send(&self, file: &mut File, auto_mode: bool) -> crate::Result<()> {
         let mut buffer = Buffer::new(&self.info);
 
         self.auto_mode.write(&mut buffer, auto_mode);

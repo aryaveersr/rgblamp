@@ -1,4 +1,4 @@
-use crate::error::{Error, LampResult};
+use crate::error::Error;
 
 #[derive(Debug, Default)]
 pub struct ReportInfo {
@@ -21,7 +21,7 @@ impl ReportInfo {
         args
     }
 
-    pub fn validate(&self) -> LampResult<()> {
+    pub fn validate(&self) -> crate::Result<()> {
         if self.size.is_multiple_of(8) {
             Ok(())
         } else {

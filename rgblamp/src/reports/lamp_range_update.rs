@@ -2,12 +2,9 @@ use std::{fs::File, ops::RangeInclusive};
 
 use color::Rgba8;
 
-use crate::{
-    error::LampResult,
-    reports::{
-        LampUpdateFlags, Report, ReportInfo,
-        utils::{buffer::Buffer, field::ReportField, io::set_feature, usage},
-    },
+use crate::reports::{
+    LampUpdateFlags, Report, ReportInfo,
+    utils::{buffer::Buffer, field::ReportField, io::set_feature, usage},
 };
 
 #[derive(Debug, Default)]
@@ -32,7 +29,7 @@ impl LampRangeUpdateReport {
         }
     }
 
-    pub fn send(&self, file: &mut File, params: LampRangeUpdateParams) -> LampResult<()> {
+    pub fn send(&self, file: &mut File, params: LampRangeUpdateParams) -> crate::Result<()> {
         let LampRangeUpdateParams {
             lamp_ids,
             update_flags,
@@ -55,7 +52,7 @@ impl LampRangeUpdateReport {
 }
 
 impl Report for LampRangeUpdateReport {
-    fn register(&mut self, usages: &[u16], size: u32) -> LampResult<()> {
+    fn register(&mut self, usages: &[u16], size: u32) -> crate::Result<()> {
         for usage in usages {
             let args = self.info.increment(size);
             match *usage {
@@ -73,7 +70,7 @@ impl Report for LampRangeUpdateReport {
         Ok(())
     }
 
-    fn validate(&self) -> LampResult<()> {
+    fn validate(&self) -> crate::Result<()> {
         self.info.validate()?;
 
         self.lamp_id_start.validate("LAMP_ID_START")?;

@@ -11,14 +11,11 @@ use std::fmt::Debug;
 use bilge::prelude::*;
 use enum_dispatch::enum_dispatch;
 
-use crate::{
-    error::LampResult,
-    reports::{
-        lamp_array_attrs::LampArrayAttrsReport, lamp_array_control::LampArrayControlReport,
-        lamp_attrs_request::LampAttrsRequestReport, lamp_attrs_response::LampAttrsResponseReport,
-        lamp_multi_update::LampMultiUpdateReport, lamp_range_update::LampRangeUpdateReport,
-        utils::info::ReportInfo,
-    },
+use crate::reports::{
+    lamp_array_attrs::LampArrayAttrsReport, lamp_array_control::LampArrayControlReport,
+    lamp_attrs_request::LampAttrsRequestReport, lamp_attrs_response::LampAttrsResponseReport,
+    lamp_multi_update::LampMultiUpdateReport, lamp_range_update::LampRangeUpdateReport,
+    utils::info::ReportInfo,
 };
 
 pub mod lamp_array_attrs;
@@ -31,8 +28,8 @@ pub mod utils;
 
 #[enum_dispatch]
 pub trait Report {
-    fn register(&mut self, usages: &[u16], size: u32) -> LampResult<()>;
-    fn validate(&self) -> LampResult<()>;
+    fn register(&mut self, usages: &[u16], size: u32) -> crate::Result<()>;
+    fn validate(&self) -> crate::Result<()>;
 }
 
 #[enum_dispatch(Report)]
@@ -65,7 +62,7 @@ pub struct LampUpdateFlags {
 impl TryFrom<u32> for LampUpdateFlags {
     type Error = <u16 as TryFrom<u32>>::Error;
 
-    fn try_from(value: u32) -> Result<Self, Self::Error> {
+    fn try_from(value: u32) -> std::result::Result<Self, Self::Error> {
         Ok(u16::try_from(value)?.into())
     }
 }

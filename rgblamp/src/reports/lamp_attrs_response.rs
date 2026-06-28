@@ -2,7 +2,6 @@ use std::{fs::File, time::Duration};
 
 use crate::{
     LampAttrs,
-    error::LampResult,
     reports::{
         Report, ReportInfo,
         utils::{field::ReportField, io::get_feature, usage},
@@ -31,7 +30,7 @@ impl LampAttrsResponseReport {
         }
     }
 
-    pub fn get(&self, file: &mut File) -> LampResult<LampAttrs> {
+    pub fn get(&self, file: &mut File) -> crate::Result<LampAttrs> {
         let buffer = get_feature(file, &self.info)?;
 
         Ok(LampAttrs {
@@ -48,7 +47,7 @@ impl LampAttrsResponseReport {
 }
 
 impl Report for LampAttrsResponseReport {
-    fn register(&mut self, usages: &[u16], size: u32) -> LampResult<()> {
+    fn register(&mut self, usages: &[u16], size: u32) -> crate::Result<()> {
         for usage in usages {
             let args = self.info.increment(size);
             match *usage {
@@ -66,7 +65,7 @@ impl Report for LampAttrsResponseReport {
         Ok(())
     }
 
-    fn validate(&self) -> LampResult<()> {
+    fn validate(&self) -> crate::Result<()> {
         self.info.validate()?;
 
         self.lamp_id.validate("LAMP_ID")?;

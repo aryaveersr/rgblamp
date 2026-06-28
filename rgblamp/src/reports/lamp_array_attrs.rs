@@ -1,11 +1,8 @@
 use std::fs::File;
 
-use crate::{
-    error::LampResult,
-    reports::{
-        Report, ReportInfo,
-        utils::{field::ReportField, io::get_feature, usage},
-    },
+use crate::reports::{
+    Report, ReportInfo,
+    utils::{field::ReportField, io::get_feature, usage},
 };
 
 #[derive(Debug, Default)]
@@ -24,7 +21,7 @@ impl LampArrayAttrsReport {
         }
     }
 
-    pub fn get(&self, file: &mut File) -> LampResult<LampArrayAttrs> {
+    pub fn get(&self, file: &mut File) -> crate::Result<LampArrayAttrs> {
         let buffer = get_feature(file, &self.info)?;
 
         Ok(LampArrayAttrs {
@@ -35,7 +32,7 @@ impl LampArrayAttrsReport {
 }
 
 impl Report for LampArrayAttrsReport {
-    fn register(&mut self, usages: &[u16], size: u32) -> LampResult<()> {
+    fn register(&mut self, usages: &[u16], size: u32) -> crate::Result<()> {
         for usage in usages {
             let args = self.info.increment(size);
             match *usage {
@@ -48,7 +45,7 @@ impl Report for LampArrayAttrsReport {
         Ok(())
     }
 
-    fn validate(&self) -> LampResult<()> {
+    fn validate(&self) -> crate::Result<()> {
         self.info.validate()?;
 
         self.lamp_count.validate("LAMP_COUNT")?;

@@ -9,7 +9,7 @@ use log::{error, trace};
 
 use crate::{
     LampUpdateBuilder,
-    error::{Error, LampResult},
+    error::Error,
     reports::{LampUpdateFlags, Reports, lamp_range_update::LampRangeUpdateParams},
 };
 
@@ -24,7 +24,7 @@ pub struct LampArray {
 }
 
 impl LampArray {
-    pub fn new(dev_name: impl Into<String>, reports: Reports) -> LampResult<Self> {
+    pub fn new(dev_name: impl Into<String>, reports: Reports) -> crate::Result<Self> {
         let dev_name = dev_name.into();
 
         trace!("creating a new lamparray from /dev/{dev_name}");
@@ -80,7 +80,7 @@ impl LampArray {
         &self.lamps
     }
 
-    pub fn set_auto_mode(&mut self, auto_mode: bool) -> LampResult<()> {
+    pub fn set_auto_mode(&mut self, auto_mode: bool) -> crate::Result<()> {
         trace!("setting auto mode to '{auto_mode}' for {}", self.dev_name);
 
         self.reports
@@ -88,7 +88,7 @@ impl LampArray {
             .send(&mut self.file, auto_mode)
     }
 
-    pub fn set_lamp(&mut self, lamp_id: u32, color: Rgba8) -> LampResult<()> {
+    pub fn set_lamp(&mut self, lamp_id: u32, color: Rgba8) -> crate::Result<()> {
         trace!(
             "setting lamp {lamp_id} to color '{color}' for {}",
             self.dev_name
@@ -112,7 +112,7 @@ impl LampArray {
         )
     }
 
-    pub fn set_all_lamps(&mut self, color: Rgba8) -> LampResult<()> {
+    pub fn set_all_lamps(&mut self, color: Rgba8) -> crate::Result<()> {
         trace!("setting all lamps to color '{color}' for {}", self.dev_name);
 
         self.reports.lamp_range_update.send(
@@ -130,7 +130,7 @@ impl LampArray {
         lamp_ids: RangeInclusive<u32>,
         color: Rgba8,
         is_last: bool,
-    ) -> LampResult<()> {
+    ) -> crate::Result<()> {
         trace!(
             "setting all lamps in range {lamp_ids:?} to color '{color}' for {}",
             self.dev_name
@@ -160,7 +160,7 @@ impl LampArray {
         )
     }
 
-    pub fn builder(&mut self) -> LampResult<LampUpdateBuilder<'_>> {
+    pub fn builder(&mut self) -> crate::Result<LampUpdateBuilder<'_>> {
         trace!("creating builder for {}", self.dev_name);
 
         Ok(LampUpdateBuilder::new(self))

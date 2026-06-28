@@ -2,12 +2,9 @@ use std::fs::File;
 
 use color::Rgba8;
 
-use crate::{
-    error::LampResult,
-    reports::{
-        LampUpdateFlags, Report, ReportInfo,
-        utils::{buffer::Buffer, field::ReportField, io::set_feature, usage},
-    },
+use crate::reports::{
+    LampUpdateFlags, Report, ReportInfo,
+    utils::{buffer::Buffer, field::ReportField, io::set_feature, usage},
 };
 
 #[derive(Debug, Default)]
@@ -37,7 +34,7 @@ impl LampMultiUpdateReport {
         self.slots
     }
 
-    pub fn send(&self, file: &mut File, params: LampMultiUpdateParams) -> LampResult<()> {
+    pub fn send(&self, file: &mut File, params: LampMultiUpdateParams) -> crate::Result<()> {
         let LampMultiUpdateParams {
             update_flags,
             items,
@@ -79,7 +76,7 @@ impl LampMultiUpdateReport {
 }
 
 impl Report for LampMultiUpdateReport {
-    fn register(&mut self, usages: &[u16], size: u32) -> LampResult<()> {
+    fn register(&mut self, usages: &[u16], size: u32) -> crate::Result<()> {
         for usage in usages {
             let args = self.info.increment(size);
             match *usage {
@@ -101,7 +98,7 @@ impl Report for LampMultiUpdateReport {
         Ok(())
     }
 
-    fn validate(&self) -> LampResult<()> {
+    fn validate(&self) -> crate::Result<()> {
         self.info.validate()?;
 
         self.lamp_count.validate("LAMP_COUNT")?;

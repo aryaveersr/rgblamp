@@ -2,7 +2,7 @@ use color::Rgba8;
 use log::{error, trace};
 
 use crate::{
-    Error, LampArray, LampResult,
+    Error, LampArray,
     reports::{
         LampUpdateFlags,
         lamp_multi_update::{LampMultiUpdateParams, LampUpdateItem},
@@ -23,7 +23,7 @@ impl<'a> LampUpdateBuilder<'a> {
         }
     }
 
-    pub fn set(&mut self, lamp_id: u32, color: Rgba8) -> LampResult<&mut Self> {
+    pub fn set(&mut self, lamp_id: u32, color: Rgba8) -> crate::Result<&mut Self> {
         trace!(
             "an update builder is setting lamp {lamp_id} to color '{color}' for {}",
             self.lamp_array.dev_name
@@ -52,7 +52,7 @@ impl<'a> LampUpdateBuilder<'a> {
         Ok(self)
     }
 
-    pub fn finish(self, is_last: bool) -> LampResult<()> {
+    pub fn finish(self, is_last: bool) -> crate::Result<()> {
         trace!(
             "an update builder finishing with is_last: {is_last} for {}",
             self.lamp_array.dev_name

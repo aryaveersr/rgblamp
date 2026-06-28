@@ -4,7 +4,7 @@ use bilge::prelude::*;
 
 use crate::{
     LampArray,
-    error::{Error, LampResult},
+    error::Error,
     reports::{
         Report, ReportKind, Reports, lamp_array_attrs::LampArrayAttrsReport,
         lamp_array_control::LampArrayControlReport, lamp_attrs_request::LampAttrsRequestReport,
@@ -47,7 +47,7 @@ impl<'a> ReportDescriptorParser<'a> {
         }
     }
 
-    pub fn next(&mut self, dev_name: impl Into<String>) -> LampResult<Option<LampArray>> {
+    pub fn next(&mut self, dev_name: impl Into<String>) -> crate::Result<Option<LampArray>> {
         while let Some((tag, data)) = self.consume_item()? {
             match tag.kind() {
                 ItemKind::Global => self.handle_global_item(tag.tag(), data)?,
@@ -64,7 +64,7 @@ impl<'a> ReportDescriptorParser<'a> {
         Ok(None)
     }
 
-    fn handle_global_item(&mut self, kind: u4, data: u32) -> LampResult<()> {
+    fn handle_global_item(&mut self, kind: u4, data: u32) -> crate::Result<()> {
         let kind = GlobalItemKind::try_from(kind)
             .map_err(|_| Error::parser(format!("unknown global item: {kind}")))?;
 
@@ -87,7 +87,7 @@ impl<'a> ReportDescriptorParser<'a> {
         Ok(())
     }
 
-    fn handle_local_item(&mut self, kind: u4, data: u32) -> LampResult<()> {
+    fn handle_local_item(&mut self, kind: u4, data: u32) -> crate::Result<()> {
         let kind = LocalItemKind::try_from(kind)
             .map_err(|_| Error::parser(format!("unknown local item: {kind}")))?;
 
@@ -116,7 +116,7 @@ impl<'a> ReportDescriptorParser<'a> {
         Ok(())
     }
 
-    fn handle_main_item(&mut self, kind: u4) -> LampResult<Option<Reports>> {
+    fn handle_main_item(&mut self, kind: u4) -> crate::Result<Option<Reports>> {
         let kind = MainItemKind::try_from(kind)
             .map_err(|_| Error::parser(format!("unknown main item: {kind}")))?;
 
@@ -131,7 +131,7 @@ impl<'a> ReportDescriptorParser<'a> {
         Ok(None)
     }
 
-    fn handle_data_item(&mut self, kind: DataKind) -> LampResult<()> {
+    fn handle_data_item(&mut self, kind: DataKind) -> crate::Result<()> {
         if let Some((report, _)) = &mut self.active_report {
             let size = self
                 .globals
@@ -178,7 +178,7 @@ impl<'a> ReportDescriptorParser<'a> {
         Ok(())
     }
 
-    fn start_collection(&mut self) -> LampResult<()> {
+    fn start_collection(&mut self) -> crate::Result<()> {
         self.collection_depth += 1;
 
         if self.globals.usage_page != Some(usage::PAGE_LIGHTING) {
@@ -217,7 +217,7 @@ impl<'a> ReportDescriptorParser<'a> {
         Ok(())
     }
 
-    fn end_collection(&mut self) -> LampResult<Option<Reports>> {
+    fn end_collection(&mut self) -> crate::Result<Option<Reports>> {
         if self.collection_depth == 0 {
             return Err(Error::parser("unbalanced collection items"));
         }
@@ -249,7 +249,7 @@ impl<'a> ReportDescriptorParser<'a> {
         })
     }
 
-    fn consume_item(&mut self) -> LampResult<Option<(ItemTag, u32)>> {
+    fn consume_item(&mut self) -> crate::Result<Option<(ItemTag, u32)>> {
         if self.bytes.is_empty() {
             return Ok(None);
         }
@@ -275,7 +275,7 @@ impl<'a> ReportDescriptorParser<'a> {
         Ok(Some((tag, u32::from_le_bytes(buffer))))
     }
 
-    fn activate_report(&mut self, report: impl Into<ReportKind>) -> LampResult<()> {
+    fn activate_report(&mut self, report: impl Into<ReportKind>) -> crate::Result<()> {
         if self.active_report.is_some() {
             return Err(Error::parser("cannot start another report inside a report"));
         }
@@ -284,7 +284,7 @@ impl<'a> ReportDescriptorParser<'a> {
         Ok(())
     }
 
-    fn deactivate_report(&mut self) -> LampResult<()> {
+    fn deactivate_report(&mut self) -> crate::Result<()> {
         let (report, _) = self.active_report.take().unwrap();
         report.validate()?;
 
