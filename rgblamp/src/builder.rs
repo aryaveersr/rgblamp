@@ -79,6 +79,11 @@ impl<'a> LampUpdateBuilder<'a> {
             self.lamp_array.dev_name
         );
 
+        if self.buffer.is_empty() {
+            trace!("the update builder was empty");
+            return Ok(());
+        }
+
         self.lamp_array.reports.lamp_multi_update.send(
             &mut self.lamp_array.file,
             LampMultiUpdateParams {
