@@ -10,9 +10,13 @@
 
 ## Table of Contents
 
+- [Installation](#installation)
+  - [From crates.io](#from-cratesio)
+  - [From source](#from-source)
 - [Setup](#setup)
   - [Permissions](#permissions)
   - [Run in background on startup](#run-in-background-on-startup)
+- [Documentation](#documentation)
 - [License](#license)
 
 ## Installation
@@ -93,6 +97,10 @@ You can achieve persistent effects running in the background using systemd rules
   systemctl --user daemon-reload
   systemctl --user enable --now rgblamp.service
   ```
+
+## Documentation
+
+[Documentation for the library](./rgblamp/README.md)
 
 ## License
 
