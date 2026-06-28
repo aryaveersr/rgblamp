@@ -18,16 +18,14 @@ pub struct SetCommand {
 
 impl SetCommand {
     pub fn exec(&self) -> anyhow::Result<()> {
-        let mut devices = self.device.iter()?.peekable();
+        let mut devices = self.device.enumerate()?;
         let color = parse_color(&self.color)
             .map(|c| c.to_alpha_color::<Srgb>().to_rgba8())
             .context("invalid color")?;
 
-        ensure!(devices.peek().is_some(), "no devices found");
+        ensure!(!devices.is_empty(), "no devices found");
 
-        for device in devices {
-            let (_, mut device) = device?;
-
+        for (_, device) in &mut devices {
             match self.lamp_id {
                 Some(lamp_id) => {
                     device.set_lamp(lamp_id, color)?;

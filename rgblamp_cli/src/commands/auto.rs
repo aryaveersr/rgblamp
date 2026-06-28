@@ -20,13 +20,12 @@ enum Switch {
 
 impl AutoCommand {
     pub fn exec(&self) -> anyhow::Result<()> {
-        let mut devices = self.device.iter()?.peekable();
+        let mut devices = self.device.enumerate()?;
         let auto_mode = self.value == Switch::On;
 
-        ensure!(devices.peek().is_some(), "no devices found");
+        ensure!(!devices.is_empty(), "no devices found");
 
-        for device in devices {
-            let (_, mut device) = device?;
+        for (_, device) in &mut devices {
             device.set_auto_mode(auto_mode)?;
         }
 

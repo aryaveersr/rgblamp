@@ -16,25 +16,26 @@ pub struct ListCommand {
 
 impl ListCommand {
     pub fn exec(&self) -> anyhow::Result<()> {
-        let devices = self.device.iter()?;
+        let devices = self.device.enumerate()?;
 
         if self.json {
             let value = devices
-                .map(|d| d.map(|d| self.json_device(d)))
-                .collect::<anyhow::Result<Vec<_>>>()?;
+                .iter()
+                .map(|d| self.json_device(d))
+                .collect::<Vec<_>>();
 
             let mut handle = stdout().lock();
             serde_json::to_writer(&mut handle, &value)?;
         } else {
-            for (i, device) in devices.enumerate() {
-                self.list_device(i, device?);
+            for (i, device) in devices.iter().enumerate() {
+                self.list_device(i, device);
             }
         }
 
         Ok(())
     }
 
-    fn json_device(&self, (info, device): (HidInfo, LampArray)) -> serde_json::Value {
+    fn json_device(&self, (info, device): &(HidInfo, LampArray)) -> serde_json::Value {
         serde_json::json!({
             "dev_name": device.dev_name(),
             "hid_info": info,
@@ -43,7 +44,7 @@ impl ListCommand {
         })
     }
 
-    fn list_device(&self, i: usize, (info, device): (HidInfo, LampArray)) {
+    fn list_device(&self, i: usize, (info, device): &(HidInfo, LampArray)) {
         println!("Device {i}:");
         println!("  Dev name: {}", device.dev_name());
         println!("  Vendor: {}", info.id.vendor);

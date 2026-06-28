@@ -1,4 +1,9 @@
-use crate::device::{hid_info::HidInfo, iter::DeviceIter};
+use std::{fs, str::FromStr};
+
+use anyhow::Context;
+use rgblamp::{LampArray, ReportDescriptorParser};
+
+use crate::device::hid_info::HidInfo;
 
 #[derive(clap::Args, Debug)]
 #[command(next_help_heading = "Device selectors")]
@@ -29,15 +34,41 @@ pub struct DeviceArgs {
 }
 
 impl DeviceArgs {
-    pub fn dev_name(&self) -> Option<&str> {
-        self.dev_name.as_deref()
+    pub fn enumerate(&self) -> anyhow::Result<Vec<(HidInfo, LampArray)>> {
+        let mut devices = Vec::new();
+
+        for entry in fs::read_dir("/sys/class/hidraw")? {
+            let entry = entry?;
+
+            let file_name = entry.file_name();
+            let dev_name = file_name
+                .to_str()
+                .context("invalid device name")?
+                .to_owned();
+
+            if let Some(dev_name_arg) = &self.dev_name
+                && *dev_name_arg != dev_name
+            {
+                continue;
+            }
+
+            let info = HidInfo::from_str(&fs::read_to_string(entry.path().join("device/uevent"))?)?;
+            if !self.satisfies(&info) {
+                continue;
+            }
+
+            let contents = fs::read(entry.path().join("device/report_descriptor"))?;
+            let mut parser = ReportDescriptorParser::new(&contents);
+
+            while let Some(lamp_array) = parser.next(&dev_name)? {
+                devices.push((info.clone(), lamp_array));
+            }
+        }
+
+        Ok(devices)
     }
 
-    pub fn iter(&self) -> anyhow::Result<DeviceIter<'_>> {
-        DeviceIter::new(self)
-    }
-
-    pub fn satisfies(&self, info: &HidInfo) -> bool {
+    fn satisfies(&self, info: &HidInfo) -> bool {
         if let Some(device_vendor) = &self.device_vendor
             && *device_vendor != info.id.vendor
         {
