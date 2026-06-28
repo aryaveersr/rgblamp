@@ -207,10 +207,10 @@ impl LampArray {
 
     /// Create an update builder to automatically batch multiple lamp updates.
     /// See [`LampUpdateBuilder`] for more information.
-    pub fn builder(&mut self) -> crate::Result<LampUpdateBuilder<'_>> {
+    pub fn builder(&mut self) -> LampUpdateBuilder<'_> {
         trace!("creating builder for {}", self.dev_name);
 
-        Ok(LampUpdateBuilder::new(self))
+        LampUpdateBuilder::new(self)
     }
 }
 
