@@ -55,3 +55,53 @@ pub mod color_impl {
         }
     }
 }
+
+#[cfg(feature = "rgb-impl")]
+pub mod rgb_impl {
+    use rgb::{Rgb, Rgba};
+
+    use super::Color;
+
+    impl From<Rgb<u8>> for Color {
+        fn from(Rgb { r, g, b }: Rgb<u8>) -> Self {
+            Self { r, g, b, a: 255 }
+        }
+    }
+
+    impl From<Color> for Rgba<u8> {
+        fn from(Color { r, g, b, a }: Color) -> Self {
+            Self { r, g, b, a }
+        }
+    }
+
+    impl From<Rgba<u8>> for Color {
+        fn from(Rgba { r, g, b, a }: Rgba<u8>) -> Self {
+            Self { r, g, b, a }
+        }
+    }
+}
+
+#[cfg(feature = "palette-impl")]
+pub mod palette_impl {
+    use palette::{Srgb, Srgba};
+
+    use super::Color;
+
+    impl From<Srgb<u8>> for Color {
+        fn from(value: Srgb<u8>) -> Self {
+            Self::new(value.red, value.green, value.blue, 255)
+        }
+    }
+
+    impl From<Color> for Srgba<u8> {
+        fn from(Color { r, g, b, a }: Color) -> Self {
+            Self::new(r, g, b, a)
+        }
+    }
+
+    impl From<Srgba<u8>> for Color {
+        fn from(value: Srgba<u8>) -> Self {
+            Self::new(value.red, value.green, value.blue, value.alpha)
+        }
+    }
+}

@@ -17,8 +17,12 @@ thiserror = "2.0.18"
 bilge.workspace = true
 color = { workspace = true, optional = true }
 log.workspace = true
+palette = { version = "0.7.6", optional = true }
+rgb = { version = "0.8.53", optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 
 [features]
 color-impl = ["dep:color"]
+palette-impl = ["dep:palette"]
+rgb-impl = ["dep:rgb"]
 serde = ["dep:serde"]
