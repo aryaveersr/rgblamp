@@ -13,13 +13,16 @@ use crate::{
 pub struct LampUpdateBuilder<'a> {
     lamp_array: &'a mut LampArray,
     buffer: Vec<LampUpdateItem>,
+    slots: usize,
 }
 
 impl<'a> LampUpdateBuilder<'a> {
     pub fn new(lamp_array: &'a mut LampArray) -> Self {
+        let slots = lamp_array.reports.lamp_multi_update.slots() as usize;
         Self {
             lamp_array,
-            buffer: Vec::with_capacity(8),
+            buffer: Vec::with_capacity(slots),
+            slots,
         }
     }
 
@@ -37,7 +40,7 @@ impl<'a> LampUpdateBuilder<'a> {
             return Err(Error::InvalidLampID);
         }
 
-        if self.buffer.len() == 8 {
+        if self.buffer.len() == self.slots {
             self.lamp_array.reports.lamp_multi_update.send(
                 &mut self.lamp_array.file,
                 LampMultiUpdateParams {
