@@ -15,8 +15,6 @@
   - [Run in background on startup](#run-in-background-on-startup)
 - [License](#license)
 
-<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
-
 ## Installation
 
 ### From crates.io
