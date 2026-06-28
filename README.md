@@ -17,6 +17,22 @@
 
 <small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
 
+## Installation
+
+### From crates.io
+
+```sh
+cargo install rgblamp_cli
+```
+
+### From source
+
+Clone this repository and run the following inside the workspace:
+
+```sh
+cargo install --path ./rgblamp_cli
+```
+
 ## Setup
 
 > [!NOTE]  
