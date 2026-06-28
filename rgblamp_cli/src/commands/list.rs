@@ -6,12 +6,12 @@ use crate::device::{DeviceArgs, HidInfo};
 
 #[derive(clap::Args, Debug)]
 pub struct ListCommand {
-    #[command(flatten)]
-    device: DeviceArgs,
-
     /// Output as JSON.
     #[arg(short, long)]
     json: bool,
+
+    #[command(flatten)]
+    device: DeviceArgs,
 }
 
 impl ListCommand {

@@ -8,11 +8,11 @@ use crate::device::DeviceArgs;
 
 #[derive(clap::Args, Debug)]
 pub struct EffectCommand {
-    #[command(flatten)]
-    device: DeviceArgs,
-
     #[command(subcommand)]
     effect: Effect,
+
+    #[command(flatten)]
+    device: DeviceArgs,
 }
 
 #[derive(clap::Subcommand, Debug)]
