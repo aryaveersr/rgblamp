@@ -9,6 +9,19 @@ use crate::{
     },
 };
 
+/// An update builder to automatically batch multiple lamp updates.
+///
+/// # Example
+///
+/// ```ignore
+/// let mut builder = lamparray.builder();
+///
+/// builder.set(0, RED);
+/// builder.set(1, GREEN);
+/// builder.set(2, BLUE);
+///
+/// builder.finish(true);
+/// ```
 #[derive(Debug)]
 pub struct LampUpdateBuilder<'a> {
     lamp_array: &'a mut LampArray,
@@ -17,7 +30,7 @@ pub struct LampUpdateBuilder<'a> {
 }
 
 impl<'a> LampUpdateBuilder<'a> {
-    pub fn new(lamp_array: &'a mut LampArray) -> Self {
+    pub(crate) fn new(lamp_array: &'a mut LampArray) -> Self {
         let slots = lamp_array.reports.lamp_multi_update.slots() as usize;
         Self {
             lamp_array,
@@ -26,6 +39,10 @@ impl<'a> LampUpdateBuilder<'a> {
         }
     }
 
+    /// Add an update request to set a lamp to a specific color.
+    ///
+    /// # Errors
+    /// - [`Error::InvalidLampID`]: Lamp ID must be valid, i.e. 0 <= lamp_id < lamp_count.
     pub fn set(&mut self, lamp_id: u32, color: Rgba8) -> crate::Result<&mut Self> {
         trace!(
             "an update builder is setting lamp {lamp_id} to color '{color}' for {}",
@@ -55,6 +72,7 @@ impl<'a> LampUpdateBuilder<'a> {
         Ok(self)
     }
 
+    /// Finish any pending update requests and optionally mark this as the last request.
     pub fn finish(self, is_last: bool) -> crate::Result<()> {
         trace!(
             "an update builder finishing with is_last: {is_last} for {}",

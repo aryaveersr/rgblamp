@@ -13,6 +13,22 @@ use crate::{
     },
 };
 
+/// A parser for report descriptors that should be used like an iterator using [`ReportDescriptorParser::next`].
+/// This is because a report descriptor can describe multiple lamparrays.
+///
+/// # Example
+///
+/// ```no_run
+/// # use rgblamp::ReportDescriptorParser;
+/// # let contents = vec![0u8];
+///
+/// let mut parser = ReportDescriptorParser::new(&contents);
+/// if let Some(lamparray) = parser.next("hidraw0")? {
+///     // Do something
+/// }
+///
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
 #[derive(Default)]
 pub struct ReportDescriptorParser<'a> {
     // Reference to the next byte to be parsed.
@@ -40,6 +56,7 @@ pub struct ReportDescriptorParser<'a> {
 }
 
 impl<'a> ReportDescriptorParser<'a> {
+    /// Create a new instance that parses the provided bytes from a report descriptor.
     pub fn new(bytes: &'a [u8]) -> Self {
         Self {
             bytes,
@@ -47,6 +64,7 @@ impl<'a> ReportDescriptorParser<'a> {
         }
     }
 
+    /// Fetch the next lamparray from the descriptor. Since this returns a [`LampArray`] instance, you must provide the `dev_name` of the device.
     pub fn next(&mut self, dev_name: impl Into<String>) -> crate::Result<Option<LampArray>> {
         while let Some((tag, data)) = self.consume_item()? {
             match tag.kind() {
@@ -304,7 +322,7 @@ impl<'a> ReportDescriptorParser<'a> {
 /// Global state that can be modified by "Global Items".
 /// (see Section 6.2.2.7 HID Spec)
 #[derive(Debug, Clone, Default)]
-pub struct GlobalState {
+struct GlobalState {
     pub usage_page: Option<u16>,
     pub logical_min: Option<i32>,
     pub logical_max: Option<i32>,

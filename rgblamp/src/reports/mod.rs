@@ -1,11 +1,3 @@
-//! References:
-//!
-//! HID Spec: https://www.usb.org/document-library/device-class-definition-hid-111
-//! HUT:      https://usb.org/document-library/hid-usage-tables-14
-//!
-//! The HUT (HID Usage Tables) document has the information for the LampArray interface
-//! under Section 26: Lighting and Illumination Page.
-
 use std::fmt::Debug;
 
 use bilge::prelude::*;

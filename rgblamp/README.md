@@ -4,7 +4,8 @@
 
 ### A library to control HID LampArray devices on Linux.
 
-[![MIT](https://img.shields.io/badge/license-MIT-blue)](https://github.com/aryaveersr/rgblamp/blob/main/LICENSE)
+[![MIT License](https://img.shields.io/crates/l/rgblamp?style=for-the-badge)](https://github.com/aryaveersr/rgblamp/blob/main/LICENSE)
+[![Docs](https://img.shields.io/docsrs/rgblamp?style=for-the-badge)](https://docs.rs/rgblamp/latest/rgblamp/)
 
 </div>
 
@@ -18,7 +19,7 @@ For instructions on how to setup permissions, refer to the [workspace README](ht
 
 ## Examples
 
-```rs
+```rust
 use std::{error::Error, fs};
 
 use rgblamp::ReportDescriptorParser;

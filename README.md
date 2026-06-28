@@ -4,7 +4,7 @@
 
 ### A command-line application and library to control HID LampArray devices on Linux.
 
-[![MIT](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
+[![MIT](https://img.shields.io/crates/l/rgblamp?style=for-the-badge)](./LICENSE)
 
 </div>
 
@@ -100,7 +100,7 @@ You can achieve persistent effects running in the background using systemd rules
 
 ## Documentation
 
-[Documentation for the library](./rgblamp/README.md)
+[Documentation for the library](https://docs.rs/rgblamp/latest/rgblamp/)
 
 ## License
 

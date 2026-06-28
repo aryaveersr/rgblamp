@@ -1,3 +1,11 @@
+//! References:
+//!
+//! HID Spec: <https://www.usb.org/document-library/device-class-definition-hid-111>
+//! HUT:      <https://usb.org/document-library/hid-usage-tables-14>
+//!
+//! The HUT (HID Usage Tables) document has the information for the LampArray interface
+//! under Section 26: Lighting and Illumination Page.
+
 use std::{
     fs::{File, OpenOptions},
     ops::RangeInclusive,
@@ -13,6 +21,22 @@ use crate::{
     reports::{LampUpdateFlags, Reports, lamp_range_update::LampRangeUpdateParams},
 };
 
+/// A LampArray device. A single physical device can expose multiple LampArray devices.
+/// Use [`crate::ReportDescriptorParser`] to create new instances of this struct.
+///
+/// # Example
+///
+/// ```no_run
+/// # use rgblamp::ReportDescriptorParser;
+/// # let contents = vec![0u8];
+///
+/// let mut parser = ReportDescriptorParser::new(&contents);
+/// if let Some(mut lamparray) = parser.next("hidraw0")? {
+///     lamparray.set_auto_mode(false);
+/// }
+///
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
 #[derive(Debug)]
 pub struct LampArray {
     pub(crate) dev_name: String,
@@ -24,7 +48,7 @@ pub struct LampArray {
 }
 
 impl LampArray {
-    pub fn new(dev_name: impl Into<String>, reports: Reports) -> crate::Result<Self> {
+    pub(crate) fn new(dev_name: impl Into<String>, reports: Reports) -> crate::Result<Self> {
         let dev_name = dev_name.into();
 
         trace!("creating a new lamparray from /dev/{dev_name}");
@@ -68,18 +92,29 @@ impl LampArray {
         })
     }
 
+    /// The dev name of the device of this lamparray.
     pub fn dev_name(&self) -> &str {
         &self.dev_name
     }
 
+    /// The minimum interval required between two updates.
+    /// Each update can consist of multiple requests where only the last request has `is_last` as `true`.
+    ///
+    /// # Warning
+    /// Not waiting atleast this duration between two updates can possibly harm the device.
     pub fn min_update_interval(&self) -> Duration {
         self.min_update_interval
     }
 
+    /// Get attributes of all the lamps for this device.
+    /// See [`LampAttrs`] for more information about these attributes.
     pub fn lamps(&self) -> &[LampAttrs] {
         &self.lamps
     }
 
+    /// Enable or disable autonomous mode for this device.
+    ///
+    /// This decides who controls the lamps for this device. When its enabled, the device runs its inbuilt effects. Disabling it transfers control to the host and is necessary for other set commands.
     pub fn set_auto_mode(&mut self, auto_mode: bool) -> crate::Result<()> {
         trace!("setting auto mode to '{auto_mode}' for {}", self.dev_name);
 
@@ -88,6 +123,10 @@ impl LampArray {
             .send(&mut self.file, auto_mode)
     }
 
+    /// Set a particular lamp to a specific color.
+    ///
+    /// # Errors
+    /// - [`Error::InvalidLampID`]: Lamp ID must be valid, i.e. 0 <= lamp_id < lamp_count.
     pub fn set_lamp(&mut self, lamp_id: u32, color: Rgba8) -> crate::Result<()> {
         trace!(
             "setting lamp {lamp_id} to color '{color}' for {}",
@@ -112,6 +151,7 @@ impl LampArray {
         )
     }
 
+    /// Set all lamps to a specific color.
     pub fn set_all_lamps(&mut self, color: Rgba8) -> crate::Result<()> {
         trace!("setting all lamps to color '{color}' for {}", self.dev_name);
 
@@ -125,6 +165,11 @@ impl LampArray {
         )
     }
 
+    /// Set all lamps in a range to a specific color.
+    ///
+    /// # Errors
+    /// - [`Error::InvalidLampID`]: Lamp IDs must be valid, i.e. 0 <= lamp_ids.end() < lamp_count.
+    /// - [`Error::EmptyLampIDRange`]: Range must not be empty.
     pub fn set_lamp_range(
         &mut self,
         lamp_ids: RangeInclusive<u32>,
@@ -160,6 +205,8 @@ impl LampArray {
         )
     }
 
+    /// Create an update builder to automatically batch multiple lamp updates.
+    /// See [`LampUpdateBuilder`] for more information.
     pub fn builder(&mut self) -> crate::Result<LampUpdateBuilder<'_>> {
         trace!("creating builder for {}", self.dev_name);
 
@@ -167,15 +214,33 @@ impl LampArray {
     }
 }
 
+/// Attributes for a single lamp.
 #[derive(Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LampAttrs {
     pub lamp_id: u32,
+
+    /// Expected latency for this lamp to reflect an update.
     pub update_latency: Duration,
+
+    /// Whether this lamp is programmable (color can be changed) or fixed.
+    /// See section 26.9 (Color Attributes) of the HUT.
+    ///
+    /// If the lamp is `Fixed`, the RGB level count attributes represent the fixed color.
     pub programmable: bool,
 
+    /// Maximum value for red color channel.
+    /// If this lamp is fixed (see [`LampAttrs::programmable`]), it represents the red color value of the fixed color.
     pub red_level_count: u32,
+
+    /// Maximum value for green color channel.
+    /// If this lamp is fixed (see [`LampAttrs::programmable`]), it represents the green color value of the fixed color.
     pub green_level_count: u32,
+
+    /// Maximum value for blue color channel.
+    /// If this lamp is fixed (see [`LampAttrs::programmable`]), it represents the blue color value of the fixed color.
     pub blue_level_count: u32,
+
+    /// Maximum value for intensity color channel.
     pub intensity_level_count: u32,
 }
