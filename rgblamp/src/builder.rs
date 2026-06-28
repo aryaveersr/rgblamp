@@ -1,8 +1,7 @@
-use color::Rgba8;
 use log::{error, trace};
 
 use crate::{
-    Error, LampArray,
+    Color, Error, LampArray,
     reports::{
         LampUpdateFlags,
         lamp_multi_update::{LampMultiUpdateParams, LampUpdateItem},
@@ -14,13 +13,13 @@ use crate::{
 /// # Example
 ///
 /// ```
-/// # use color::palette::css::{RED, GREEN, BLUE};
+/// # use rgblamp::Color;
 /// # let lamparray = &mut rgblamp::enumerate()?[0];
 /// let mut builder = lamparray.builder();
 ///
-/// builder.set(0, RED.to_rgba8());
-/// builder.set(1, GREEN.to_rgba8());
-/// builder.set(2, BLUE.to_rgba8());
+/// builder.set(0, Color::RED);
+/// builder.set(1, Color::GREEN);
+/// builder.set(2, Color::BLUE);
 ///
 /// builder.finish(true);
 /// # Ok::<(), Box<dyn std::error::Error>>(())
@@ -46,7 +45,9 @@ impl<'a> LampUpdateBuilder<'a> {
     ///
     /// # Errors
     /// - [`Error::InvalidLampID`]: Lamp ID must be valid, i.e. 0 <= lamp_id < lamp_count.
-    pub fn set(&mut self, lamp_id: u32, color: Rgba8) -> crate::Result<&mut Self> {
+    pub fn set(&mut self, lamp_id: u32, color: impl Into<Color>) -> crate::Result<&mut Self> {
+        let color = color.into();
+
         trace!(
             "an update builder is setting lamp {lamp_id} to color '{color}' for {}",
             self.lamp_array.dev_name

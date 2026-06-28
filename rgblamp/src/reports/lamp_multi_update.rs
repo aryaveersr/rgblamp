@@ -1,10 +1,11 @@
 use std::fs::File;
 
-use color::Rgba8;
-
-use crate::reports::{
-    LampUpdateFlags, Report, ReportInfo,
-    utils::{buffer::Buffer, field::ReportField, io::set_feature, usage},
+use crate::{
+    Color,
+    reports::{
+        LampUpdateFlags, Report, ReportInfo,
+        utils::{buffer::Buffer, field::ReportField, io::set_feature, usage},
+    },
 };
 
 #[derive(Debug, Default)]
@@ -121,5 +122,5 @@ pub struct LampMultiUpdateParams<'a> {
 #[derive(Debug)]
 pub struct LampUpdateItem {
     pub lamp_id: u32,
-    pub color: Rgba8,
+    pub color: Color,
 }

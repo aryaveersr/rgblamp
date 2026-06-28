@@ -12,11 +12,10 @@ use std::{
     time::Duration,
 };
 
-use color::Rgba8;
 use log::{error, trace};
 
 use crate::{
-    LampUpdateBuilder,
+    Color, LampUpdateBuilder,
     error::Error,
     reports::{LampUpdateFlags, Reports, lamp_range_update::LampRangeUpdateParams},
 };
@@ -79,7 +78,9 @@ impl LampArray {
     ///
     /// # Errors
     /// - [`Error::InvalidLampID`]: Lamp ID must be valid, i.e. 0 <= lamp_id < lamp_count.
-    pub fn set_lamp(&mut self, lamp_id: u32, color: Rgba8) -> crate::Result<()> {
+    pub fn set_lamp(&mut self, lamp_id: u32, color: impl Into<Color>) -> crate::Result<()> {
+        let color = color.into();
+
         trace!(
             "setting lamp {lamp_id} to color '{color}' for {}",
             self.dev_name
@@ -104,7 +105,9 @@ impl LampArray {
     }
 
     /// Set all lamps to a specific color.
-    pub fn set_all_lamps(&mut self, color: Rgba8) -> crate::Result<()> {
+    pub fn set_all_lamps(&mut self, color: impl Into<Color>) -> crate::Result<()> {
+        let color = color.into();
+
         trace!("setting all lamps to color '{color}' for {}", self.dev_name);
 
         self.reports.lamp_range_update.send(
@@ -125,9 +128,11 @@ impl LampArray {
     pub fn set_lamp_range(
         &mut self,
         lamp_ids: RangeInclusive<u32>,
-        color: Rgba8,
+        color: impl Into<Color>,
         is_last: bool,
     ) -> crate::Result<()> {
+        let color = color.into();
+
         trace!(
             "setting all lamps in range {lamp_ids:?} to color '{color}' for {}",
             self.dev_name

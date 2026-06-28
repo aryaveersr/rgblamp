@@ -1,6 +1,6 @@
 use std::{error::Error, fs};
 
-use rgblamp::ReportDescriptorParser;
+use rgblamp::{Color, ReportDescriptorParser};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut devices = Vec::new();
@@ -30,7 +30,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         // Disable auto mode (transfer control to host device);
         device.set_auto_mode(false)?;
         // Set all devices to blue.
-        device.set_all_lamps(color::palette::css::BLUE.to_rgba8())?;
+        device.set_all_lamps(Color::BLUE)?;
     }
 
     Ok(())

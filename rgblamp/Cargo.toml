@@ -15,9 +15,10 @@ nix = { version = "0.31.3", features = ["ioctl"] }
 thiserror = "2.0.18"
 
 bilge.workspace = true
-color.workspace = true
+color = { workspace = true, optional = true }
 log.workspace = true
 serde = { workspace = true, features = ["derive"], optional = true }
 
 [features]
+color-impl = ["dep:color"]
 serde = ["dep:serde"]

@@ -1,10 +1,11 @@
 use std::{fs::File, ops::RangeInclusive};
 
-use color::Rgba8;
-
-use crate::reports::{
-    LampUpdateFlags, Report, ReportInfo,
-    utils::{buffer::Buffer, field::ReportField, io::set_feature, usage},
+use crate::{
+    Color,
+    reports::{
+        LampUpdateFlags, Report, ReportInfo,
+        utils::{buffer::Buffer, field::ReportField, io::set_feature, usage},
+    },
 };
 
 #[derive(Debug, Default)]
@@ -88,5 +89,5 @@ impl Report for LampRangeUpdateReport {
 pub struct LampRangeUpdateParams {
     pub lamp_ids: RangeInclusive<u32>,
     pub update_flags: LampUpdateFlags,
-    pub color: Rgba8,
+    pub color: Color,
 }

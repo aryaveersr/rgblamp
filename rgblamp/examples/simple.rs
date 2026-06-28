@@ -1,5 +1,7 @@
 use std::error::Error;
 
+use rgblamp::Color;
+
 fn main() -> Result<(), Box<dyn Error>> {
     // Enumerate all available devices.
     let mut devices = rgblamp::enumerate()?;
@@ -13,7 +15,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         // Disable auto mode (transfer control to host device);
         device.set_auto_mode(false)?;
         // Set all devices to blue.
-        device.set_all_lamps(color::palette::css::BLUE.to_rgba8())?;
+        device.set_all_lamps(Color::BLUE)?;
     }
 
     Ok(())

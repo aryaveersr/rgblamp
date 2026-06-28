@@ -1,12 +1,14 @@
 #![doc = include_str!("../README.md")]
 
 mod builder;
+mod color;
 mod error;
 mod lamp_array;
 mod parser;
 mod reports;
 
 pub use builder::LampUpdateBuilder;
+pub use color::Color;
 pub use error::*;
 pub use lamp_array::*;
 pub use parser::ReportDescriptorParser;
