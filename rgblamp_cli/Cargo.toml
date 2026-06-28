@@ -1,6 +1,6 @@
 [package]
 name = "rgblamp_cli"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "A command-line application to control HID LampArray devices on Linux"
 homepage = "https://github.com/aryaveersr/rgblamp"
