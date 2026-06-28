@@ -2,6 +2,12 @@
 name = "rgblamp"
 version = "0.1.0"
 edition = "2024"
+description = "A library to control HID LampArray devices on Linux"
+homepage = "https://github.com/aryaveersr/rgblamp"
+repository = "https://github.com/aryaveersr/rgblamp"
+license = "MIT"
+keywords = ["lamparray", "linux", "rgb"]
+categories = ["hardware-support"]
 
 [dependencies]
 enum_dispatch = "0.3.13"

@@ -4,16 +4,25 @@
 
 ### A command-line application and library to control HID LampArray devices on Linux.
 
-[![GNU GPL v3](https://img.shields.io/badge/License-GNU_GPL_v3-blue)](./LICENSE)
+[![MIT](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 
 </div>
 
-# Setup
+## Table of Contents
+
+- [Setup](#setup)
+  - [Permissions](#permissions)
+  - [Run in background on startup](#run-in-background-on-startup)
+- [License](#license)
+
+<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
+## Setup
 
 > [!NOTE]  
 > If the following steps do not work, please open an issue.
 
-## Permissions
+### Permissions
 
 The application needs permission to access the devices. You can check whether the permissions work by running the list command:
 
@@ -44,7 +53,7 @@ Otherwise, follow these steps:
   rgblamp list
   ```
 
-## Run in background on startup
+### Run in background on startup
 
 You can achieve persistent effects running in the background using systemd rules.
 
@@ -71,6 +80,6 @@ You can achieve persistent effects running in the background using systemd rules
   systemctl --user enable --now rgblamp.service
   ```
 
-# License
+## License
 
-[GNU GPL v3](./LICENSE)
+[MIT](./LICENSE)
