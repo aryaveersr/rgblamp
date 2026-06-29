@@ -14,8 +14,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         builder.set(1, Color::GREEN)?;
         builder.set(2, Color::BLUE)?;
 
+        // Set a range.
+        builder.set_range(0u32..4, Color::WHITE)?;
+
         // Finish the query.
-        builder.finish(true)?;
+        builder.finish()?;
     }
 
     Ok(())
