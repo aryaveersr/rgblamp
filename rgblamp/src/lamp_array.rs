@@ -8,14 +8,13 @@
 
 use std::{
     fs::{File, OpenOptions},
-    ops::RangeInclusive,
     time::Duration,
 };
 
 use log::{error, trace};
 
 use crate::{
-    Color, LampUpdateBuilder,
+    Color, LampUpdateBuilder, Range,
     error::Error,
     reports::{LampUpdateFlags, Reports, lamp_range_update::LampRangeUpdateParams},
 };
@@ -97,7 +96,7 @@ impl LampArray {
         self.reports.lamp_range_update.send(
             &mut self.file,
             LampRangeUpdateParams {
-                lamp_ids: lamp_id..=lamp_id,
+                lamp_ids: (lamp_id..=lamp_id).into(),
                 update_flags: LampUpdateFlags::new(true),
                 color,
             },
@@ -113,7 +112,7 @@ impl LampArray {
         self.reports.lamp_range_update.send(
             &mut self.file,
             LampRangeUpdateParams {
-                lamp_ids: 0..=(self.lamps.len() as u32 - 1),
+                lamp_ids: Range::new(0, self.lamps.len() as u32),
                 update_flags: LampUpdateFlags::new(true),
                 color,
             },
@@ -127,28 +126,29 @@ impl LampArray {
     /// - [`Error::EmptyLampIDRange`]: Range must not be empty.
     pub fn set_lamp_range(
         &mut self,
-        lamp_ids: RangeInclusive<u32>,
+        lamp_ids: impl Into<Range>,
         color: impl Into<Color>,
         is_last: bool,
     ) -> crate::Result<()> {
+        let lamp_ids = lamp_ids.into();
         let color = color.into();
 
         trace!(
-            "setting all lamps in range {lamp_ids:?} to color '{color}' for {}",
+            "setting all lamps in range {lamp_ids} to color '{color}' for {}",
             self.dev_name
         );
         trace!("is this is last in a batch: {is_last}");
 
-        if *lamp_ids.end() >= self.lamps.len() as u32 {
+        if lamp_ids.exceeds(self.lamps.len() as u32) {
             error!(
-                "lampid range '{lamp_ids:?}' was invalid. number of lamps is {}",
+                "lampid range {lamp_ids} was invalid. number of lamps is {}",
                 self.lamps.len()
             );
             return Err(Error::InvalidLampID);
         }
 
         if lamp_ids.is_empty() {
-            error!("lampid range {lamp_ids:?} is empty");
+            error!("lampid range {lamp_ids} is empty");
             return Err(Error::EmptyLampIDRange);
         }
 
