@@ -28,7 +28,7 @@ impl SetCommand {
         for (_, device) in &mut devices {
             match self.lamp_id {
                 Some(lamp_id) => {
-                    device.set_lamp(lamp_id, color)?;
+                    device.set_lamp(lamp_id, color, true)?;
                 }
                 None => {
                     device.set_all_lamps(color)?;

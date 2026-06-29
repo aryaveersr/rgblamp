@@ -76,17 +76,31 @@ impl LampArray {
             .send(&mut self.file, auto_mode)
     }
 
+    /// Create an update builder to automatically batch multiple lamp updates.
+    /// See [`LampUpdateBuilder`] for more information.
+    pub fn builder(&mut self) -> LampUpdateBuilder<'_> {
+        trace!("creating builder for {}", self.dev_name);
+
+        LampUpdateBuilder::new(self)
+    }
+
     /// Set a particular lamp to a specific color.
     ///
     /// # Errors
     /// - [`Error::InvalidLampID`]: Lamp ID must be valid, i.e. 0 <= lamp_id < lamp_count.
-    pub fn set_lamp(&mut self, lamp_id: u32, color: impl Into<Color>) -> crate::Result<()> {
+    pub fn set_lamp(
+        &mut self,
+        lamp_id: u32,
+        color: impl Into<Color>,
+        is_last: bool,
+    ) -> crate::Result<()> {
         let color = color.into();
 
         trace!(
             "setting lamp {lamp_id} to color '{color}' for {}",
             self.dev_name
         );
+        trace!("is_last: {is_last}");
 
         if lamp_id >= self.lamps.len() as u32 {
             error!(
@@ -100,7 +114,7 @@ impl LampArray {
             &mut self.file,
             LampRangeUpdateParams {
                 lamp_ids: (lamp_id..=lamp_id).into(),
-                update_flags: LampUpdateFlags::new(true),
+                update_flags: LampUpdateFlags::new(is_last),
                 color,
             },
         )
@@ -120,14 +134,6 @@ impl LampArray {
                 color,
             },
         )
-    }
-
-    /// Create an update builder to automatically batch multiple lamp updates.
-    /// See [`LampUpdateBuilder`] for more information.
-    pub fn builder(&mut self) -> LampUpdateBuilder<'_> {
-        trace!("creating builder for {}", self.dev_name);
-
-        LampUpdateBuilder::new(self)
     }
 
     /// Set all lamps in a range to a specific color.
