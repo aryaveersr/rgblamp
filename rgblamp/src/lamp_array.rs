@@ -86,6 +86,9 @@ impl LampArray {
 
     /// Set a particular lamp to a specific color.
     ///
+    /// The device batches updates to the state. `is_last` indicates this is the last update in a batch.
+    /// You must wait for atleast [`LampArray::min_update_interval`] before sending another batch of updates.
+    ///
     /// # Errors
     /// - [`Error::InvalidLampID`]: Lamp ID must be valid, i.e. 0 <= lamp_id < lamp_count.
     pub fn set_lamp(
@@ -138,6 +141,9 @@ impl LampArray {
 
     /// Set all lamps in a range to a specific color.
     ///
+    /// The device batches updates to the state. `is_last` indicates this is the last update in a batch.
+    /// You must wait for atleast [`LampArray::min_update_interval`] before sending another batch of updates.
+    ///
     /// # Errors
     /// - [`Error::InvalidLampID`]: Lamp IDs must be valid, i.e. 0 <= lamp_ids.end() < lamp_count.
     /// - [`Error::EmptyLampIDRange`]: Range must not be empty.
@@ -180,6 +186,9 @@ impl LampArray {
     }
 
     /// Set multiple lamps to separate colors color.
+    ///
+    /// The device batches updates to the state. `is_last` indicates this is the last update in a batch.
+    /// You must wait for atleast [`LampArray::min_update_interval`] before sending another batch of updates.
     ///
     /// # Errors
     /// - [`Error::InvalidLampID`]: Lamp IDs must be valid, i.e. 0 <= lamp_ids.end() < lamp_count.
