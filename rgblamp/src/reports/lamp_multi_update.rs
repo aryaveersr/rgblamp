@@ -1,7 +1,7 @@
 use std::fs::File;
 
 use crate::{
-    Color,
+    LampUpdateItem,
     reports::{
         LampUpdateFlags, Report, ReportInfo,
         utils::{buffer::Buffer, field::ReportField, io::set_feature, usage},
@@ -117,10 +117,4 @@ impl Report for LampMultiUpdateReport {
 pub struct LampMultiUpdateParams<'a> {
     pub update_flags: LampUpdateFlags,
     pub items: &'a [LampUpdateItem],
-}
-
-#[derive(Debug)]
-pub struct LampUpdateItem {
-    pub lamp_id: u32,
-    pub color: Color,
 }

@@ -1,11 +1,8 @@
 use log::{error, trace};
 
 use crate::{
-    Color, Error, LampArray,
-    reports::{
-        LampUpdateFlags,
-        lamp_multi_update::{LampMultiUpdateParams, LampUpdateItem},
-    },
+    Color, Error, LampArray, LampUpdateItem,
+    reports::{LampUpdateFlags, lamp_multi_update::LampMultiUpdateParams},
 };
 
 /// An update builder to automatically batch multiple lamp updates.

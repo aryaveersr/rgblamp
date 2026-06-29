@@ -28,6 +28,12 @@ pub enum Error {
     EmptyLampIDRange,
 
     // TODO:
+    /// Provided items for a multi update was empty. This is not fatal but indicates an error in the user code.
+    /// This might be removed in future verisons and replaced with a no-op.
+    #[error("empty multi update request")]
+    EmptyMultiUpdate,
+
+    // TODO:
     /// The device has no lamps.
     /// This might be removed in future verisons and replaced with a no-op.
     #[error("device returned no lamps")]

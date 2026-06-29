@@ -16,7 +16,10 @@ use log::{error, trace};
 use crate::{
     Color, LampUpdateBuilder, Range,
     error::Error,
-    reports::{LampUpdateFlags, Reports, lamp_range_update::LampRangeUpdateParams},
+    reports::{
+        LampUpdateFlags, Reports, lamp_multi_update::LampMultiUpdateParams,
+        lamp_range_update::LampRangeUpdateParams,
+    },
 };
 
 /// A LampArray device. A single physical device can expose multiple LampArray devices.
@@ -119,6 +122,14 @@ impl LampArray {
         )
     }
 
+    /// Create an update builder to automatically batch multiple lamp updates.
+    /// See [`LampUpdateBuilder`] for more information.
+    pub fn builder(&mut self) -> LampUpdateBuilder<'_> {
+        trace!("creating builder for {}", self.dev_name);
+
+        LampUpdateBuilder::new(self)
+    }
+
     /// Set all lamps in a range to a specific color.
     ///
     /// # Errors
@@ -162,12 +173,43 @@ impl LampArray {
         )
     }
 
-    /// Create an update builder to automatically batch multiple lamp updates.
-    /// See [`LampUpdateBuilder`] for more information.
-    pub fn builder(&mut self) -> LampUpdateBuilder<'_> {
-        trace!("creating builder for {}", self.dev_name);
+    /// Set multiple lamps to separate colors color.
+    ///
+    /// # Errors
+    /// - [`Error::InvalidLampID`]: Lamp IDs must be valid, i.e. 0 <= lamp_ids.end() < lamp_count.
+    /// - [`Error::EmptyLampIDRange`]: Range must not be empty.
+    pub fn set_multiple_lamps(
+        &mut self,
+        items: &[LampUpdateItem],
+        is_last: bool,
+    ) -> crate::Result<()> {
+        trace!("setting multiple lamps for {}", self.dev_name);
+        trace!("{items:?}");
+        trace!("is this is last in a batch: {is_last}");
 
-        LampUpdateBuilder::new(self)
+        if items.is_empty() {
+            error!("multiple update request was empty");
+            return Err(Error::EmptyMultiUpdate);
+        }
+
+        for item in items {
+            if item.lamp_id >= self.lamps.len() as u32 {
+                error!(
+                    "lampid {} was invalid. number of lamps is {}",
+                    item.lamp_id,
+                    self.lamps.len()
+                );
+                return Err(Error::InvalidLampID);
+            }
+        }
+
+        self.reports.lamp_multi_update.send(
+            &mut self.file,
+            LampMultiUpdateParams {
+                update_flags: LampUpdateFlags::new(is_last),
+                items,
+            },
+        )
     }
 
     pub(crate) fn new(dev_name: impl Into<String>, reports: Reports) -> crate::Result<Self> {
@@ -244,4 +286,26 @@ pub struct LampAttrs {
 
     /// Maximum value for intensity color channel.
     pub intensity_level_count: u32,
+}
+
+/// A single entry in a multiple lamp update request.
+#[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct LampUpdateItem {
+    pub lamp_id: u32,
+    pub color: Color,
+}
+
+impl LampUpdateItem {
+    pub fn new(lamp_id: u32, color: impl Into<Color>) -> Self {
+        let color = color.into();
+        Self { lamp_id, color }
+    }
+}
+
+impl<T: Into<Color>> From<(u32, T)> for LampUpdateItem {
+    fn from((lamp_id, color): (u32, T)) -> Self {
+        let color = color.into();
+        Self { lamp_id, color }
+    }
 }
