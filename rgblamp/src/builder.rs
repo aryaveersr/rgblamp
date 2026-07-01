@@ -1,7 +1,7 @@
 use log::{error, trace};
 
 use crate::{
-    Color, Error, LampArray, LampUpdateItem, Range,
+    Color, Error, LampArray, LampUpdateItem,
     reports::{
         LampUpdateFlags, lamp_multi_update::LampMultiUpdateParams,
         lamp_range_update::LampRangeUpdateParams,
@@ -21,7 +21,7 @@ use crate::{
 /// builder.set(1, Color::GREEN);
 /// builder.set(2, Color::BLUE);
 ///
-/// builder.set_range(0u32..4, Color::WHITE);
+/// builder.set_range(0..=4, Color::WHITE);
 ///
 /// builder.finish();
 /// # Ok::<(), Box<dyn std::error::Error>>(())
@@ -33,7 +33,7 @@ pub struct LampUpdateBuilder<'a> {
     buffer: Vec<LampUpdateItem>,
     slots: usize,
     // A pending range update incase its the last request, in which case it is finalized in finish().
-    range: Option<(Range, Color)>,
+    range: Option<(std::range::RangeInclusive<u32>, Color)>,
 }
 
 impl<'a> LampUpdateBuilder<'a> {
@@ -100,27 +100,27 @@ impl<'a> LampUpdateBuilder<'a> {
     /// - [`Error::EmptyLampIDRange`]: Range must not be empty.
     pub fn set_range(
         &mut self,
-        lamp_ids: impl Into<Range>,
+        lamp_ids: impl Into<std::range::RangeInclusive<u32>>,
         color: impl Into<Color>,
     ) -> crate::Result<()> {
         let lamp_ids = lamp_ids.into();
         let color = color.into();
 
         trace!(
-            "an update builder is setting all lamps in range {lamp_ids} to color '{color}' for {}",
+            "an update builder is setting all lamps in range {lamp_ids:?} to color '{color}' for {}",
             self.lamp_array.dev_name
         );
 
-        if lamp_ids.exceeds(self.lamp_array.lamps.len() as u32) {
+        if lamp_ids.last >= self.lamp_array.lamps.len() as u32 {
             error!(
-                "lampid range {lamp_ids} was invalid. number of lamps is {}",
+                "lampid range {lamp_ids:?} was invalid. number of lamps is {}",
                 self.lamp_array.lamps.len()
             );
             return Err(Error::InvalidLampID);
         }
 
         if lamp_ids.is_empty() {
-            error!("lampid range {lamp_ids} is empty");
+            error!("lampid range {lamp_ids:?} is empty");
             return Err(Error::EmptyLampIDRange);
         }
 

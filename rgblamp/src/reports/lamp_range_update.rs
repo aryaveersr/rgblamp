@@ -1,7 +1,7 @@
 use std::fs::File;
 
 use crate::{
-    Color, Range,
+    Color,
     reports::{
         LampUpdateFlags, Report, ReportInfo,
         utils::{buffer::Buffer, field::ReportField, io::set_feature, usage},
@@ -40,7 +40,7 @@ impl LampRangeUpdateReport {
         let mut buffer = Buffer::new(&self.info);
 
         self.lamp_id_start.write(&mut buffer, lamp_ids.start);
-        self.lamp_id_end.write(&mut buffer, lamp_ids.end);
+        self.lamp_id_end.write(&mut buffer, lamp_ids.last);
         self.update_flags.write(&mut buffer, update_flags);
 
         self.red.write(&mut buffer, color.r);
@@ -87,7 +87,7 @@ impl Report for LampRangeUpdateReport {
 
 #[derive(Debug)]
 pub struct LampRangeUpdateParams {
-    pub lamp_ids: Range,
+    pub lamp_ids: std::range::RangeInclusive<u32>,
     pub update_flags: LampUpdateFlags,
     pub color: Color,
 }
