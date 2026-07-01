@@ -1,16 +1,20 @@
 use anyhow::{Context, ensure};
 use color::{Srgb, parse_color};
 
-use crate::device::DeviceArgs;
+use crate::{
+    device::DeviceArgs,
+    lamp_id::{LampIdArg, LampIdItem},
+};
 
 #[derive(clap::Args, Debug)]
 pub struct SetCommand {
     /// Color as any value supported by CSS (hex, rgb(), named values, etc.)
     color: String,
 
-    /// Set the color of a specific lamp.
+    /// Set the color of specific lamp(s). Can be comma separated ids or id ranges.
+    /// (eg: 0, 4..=5, 11..13, etc.)
     #[arg(short, long = "lamp")]
-    lamp_id: Option<u32>,
+    lamp_ids: LampIdArg,
 
     #[command(flatten)]
     device: DeviceArgs,
@@ -26,13 +30,19 @@ impl SetCommand {
         ensure!(!devices.is_empty(), "no devices found");
 
         for (_, device) in &mut devices {
-            match self.lamp_id {
-                Some(lamp_id) => {
-                    device.set_lamp(lamp_id, color, true)?;
+            if self.lamp_ids.is_empty() {
+                device.set_all_lamps(color)?;
+            } else {
+                let mut builder = device.builder();
+
+                for item in &self.lamp_ids {
+                    match item? {
+                        LampIdItem::Id(id) => builder.set(id, color)?,
+                        LampIdItem::Range(range) => builder.set_range(range, color)?,
+                    };
                 }
-                None => {
-                    device.set_all_lamps(color)?;
-                }
+
+                builder.finish()?;
             }
         }
 

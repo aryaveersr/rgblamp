@@ -6,6 +6,7 @@ use crate::commands::Commands;
 
 mod commands;
 mod device;
+mod lamp_id;
 
 /// Control HID LampArray devices on Linux.
 #[derive(clap::Parser, Debug)]
