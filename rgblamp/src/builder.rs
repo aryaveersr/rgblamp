@@ -102,7 +102,7 @@ impl<'a> LampUpdateBuilder<'a> {
         &mut self,
         lamp_ids: impl Into<std::range::RangeInclusive<u32>>,
         color: impl Into<Color>,
-    ) -> crate::Result<()> {
+    ) -> crate::Result<&mut Self> {
         let lamp_ids = lamp_ids.into();
         let color = color.into();
 
@@ -135,7 +135,7 @@ impl<'a> LampUpdateBuilder<'a> {
             )?;
         }
 
-        Ok(())
+        Ok(self)
     }
 
     /// Finish any pending update requests.
