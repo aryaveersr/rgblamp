@@ -85,7 +85,7 @@ impl<'a> LampIdIter<'a> {
     }
 
     fn consume_if(&mut self, c: char) -> Option<char> {
-        if Some(c) == self.source.chars().next() {
+        if self.source.starts_with(c) {
             self.consume_char()
         } else {
             None
